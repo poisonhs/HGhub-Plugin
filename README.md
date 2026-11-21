@@ -23,6 +23,7 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `netflixgc.source` 奈飞工厂 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
 | `cg91.source` 91吃瓜 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `av591.source` 591AV | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
+| `huangguo.source` 黄果短剧 | 首页 / 分类 / 榜单 / 搜索 / 详情 / 播放 / 图文 | 成人内容，需在设置里开启；封面是 AES-CBC 加密图床 |
 
 ```
 manifest/manifest.json      插件列表，订阅入口
@@ -43,6 +44,7 @@ plugins/auete.source.js     单文件插件
 plugins/netflixgc.source.js 单文件插件
 plugins/cg91.source.js      单文件插件
 plugins/av591.source.js     单文件插件
+plugins/huangguo.source.js  单文件插件
 ```
 
 ## 订阅
