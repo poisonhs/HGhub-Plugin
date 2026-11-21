@@ -15,10 +15,10 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `hlws.source` 51黑料 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `chengguo.source` 橙果短剧 | 首页 / 频道 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `jisu.source` 极速追剧 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
-| `zhuiying.source` 追影 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
-| `kxyy.source` 开心影院 | 首页 / 分类 / 搜索 / 详情 / 播放 | 部分线路仅 App 可播，插件已标注 |
+| `zhuiying.source` 追影 | 首页 / 分类 / 搜索 / 详情 / 播放 | 需要关闭🛩️ |
+| `kxyy.source` 开心影院 | 首页 / 分类 / 搜索 / 详情 / 播放 | 需要关闭🛩️ |
 | `dhvideo.source` 豆花电影网 | 首页 / 分类 / 搜索 / 详情 / 播放 | 首集可能要等 3 MB 播放页，之后走缓存 |
-| `appmovie.source` APP影院 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
+| `appmovie.source` APP影院 | 首页 / 分类 / 搜索 / 详情 / 播放 | 需要关闭🛩️ |
 | `auete.source` Auete影视 | 首页 / 分类 / 详情 / 播放 | 站内搜索需图形验证码，未提供搜索 |
 | `netflixgc.source` 奈飞工厂 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
 | `cg91.source` 91吃瓜 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
