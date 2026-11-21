@@ -1,9 +1,9 @@
 export const meta = {
   id: 'huangguo.source',
   name: '黄果短剧',
-  version: '1.0.0',
+  version: '1.0.1',
   protocol: 1,
-  description: '黄果短剧（huangguoai.com）：首页分区、分类与榜单、搜索、详情、HLS 播放与图文。封面走站点 AES-CBC 图床协议并剥掉会过期的 auth_key；取流按签名真实到期时间声明 expiresAt。',
+  description: '黄果短剧（huangguoai.com）：首页分区、分类与榜单、搜索、详情、HLS 播放与图文。封面走站点 AES-CBC 图床协议并剥掉会过期的 auth_key；取流按签名真实到期时间声明 expiresAt；空分类自动隐藏。',
   author: 'community',
   kind: 'source',
   mature: true,
@@ -351,6 +351,46 @@ export default function (hg) {
 
   // ---- 分类 ----------------------------------------------------------------
 
+  // 源站有些分类是空壳（total=0），点进去只有空白列表，探测后再决定是否展示
+  const LIVE_TTL_MS = 30 * 60 * 1000;
+  let liveCache = null;
+
+  async function probeCategory(cate, ctx) {
+    try {
+      const data = await api('/api/videos', {
+        query: { cate_id: cate.id, page: 1, size: 1 },
+        ctx: ctx,
+        label: '分类探测',
+        timeoutMs: 8000,
+      });
+      const items = data && Array.isArray(data.items) ? data.items.length : 0;
+      if (items > 0) return true;
+      const total = data && data.pagination ? num(data.pagination.total) : null;
+      if (total != null && total > 0) return true;
+      return false;
+    } catch (err) {
+      if (err && err.code === 'CANCELLED') throw err;
+      return null; // 探测失败不下结论，保留分类
+    }
+  }
+
+  async function liveCategories(ctx) {
+    const cats = await categories(ctx);
+    if (liveCache && Date.now() - liveCache.at < LIVE_TTL_MS) {
+      const kept = cats.filter(function (c) { return liveCache.keep[c.id] !== false; });
+      return kept.length ? kept : cats;
+    }
+    const flags = await Promise.all(cats.map(function (c) { return probeCategory(c, ctx); }));
+    const keep = {};
+    const out = [];
+    for (let i = 0; i < cats.length; i++) {
+      keep[cats[i].id] = flags[i] !== false;
+      if (flags[i] !== false) out.push(cats[i]);
+    }
+    liveCache = { at: Date.now(), keep: keep };
+    return out.length ? out : cats;
+  }
+
   async function categories(ctx) {
     if (cateCache) return cateCache;
     let rows = [];
@@ -499,7 +539,7 @@ export default function (hg) {
 
     catalog: {
       async getCategories(params, ctx) {
-        const cats = await categories(ctx);
+        const cats = await liveCategories(ctx);
         const out = [{ id: 'all', label: '全部', sorts: SORTS }];
         for (let i = 0; i < cats.length; i++) {
           out.push({ id: cats[i].id, label: cats[i].label, sorts: SORTS });

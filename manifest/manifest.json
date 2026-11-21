@@ -124,8 +124,8 @@
     {
       "id": "huangguo.source",
       "name": "黄果短剧",
-      "version": "1.0.0",
-      "description": "黄果短剧（huangguoai.com）：首页分区、分类与榜单、搜索、详情、HLS 播放与图文。封面走站点 AES-CBC 图床协议并剥掉会过期的 auth_key；取流按签名真实到期时间声明 expiresAt",
+      "version": "1.0.1",
+      "description": "黄果短剧（huangguoai.com）：首页分区、分类与榜单、搜索、详情、HLS 播放与图文。封面走站点 AES-CBC 图床协议并剥掉会过期的 auth_key；取流按签名真实到期时间声明 expiresAt；空分类自动探测隐藏",
       "url": "../plugins/huangguo.source.js"
     }
   ]
