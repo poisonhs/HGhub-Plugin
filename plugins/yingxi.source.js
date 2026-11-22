@@ -1,10 +1,10 @@
 export const meta = {
   id: 'yingxi.source',
   name: '影夕视频',
-  version: '1.0.0',
+  version: '1.0.1',
   protocol: 1,
   kind: 'source',
-  description: '影夕视频（yingxivod.com）：首页最近更新与前四个频道、分类分页（地区/首字母/排序）、搜索、详情与直连播放。播放页 player_aaaa 明文给出地址，站内 m3u8proxy 的真实地址自行还原；CDN 见到 Referer 就 403，所以默认头里刻意不带 Referer。',
+  description: '影夕视频（yingxivod.com）：首页最近更新与四个频道、分类分页（地区/首字母/排序）、搜索、详情与直连播放；电视直播频道不暴露。播放页 player_aaaa 明文给出地址，站内 m3u8proxy 的真实地址自行还原；CDN 见到 Referer 就 403，所以默认头里刻意不带 Referer。',
   mature: false,
   linkDomains: ['yingxivod.com', 'www.yingxivod.com'],
   // 关键：绝不在这里放 Referer。cf*.yfvodcdn.com 与 cf*.magicvodcdn.com
@@ -55,7 +55,6 @@ const CATS = [
   { id: '3', label: '综艺', type: 'variety' },
   { id: '4', label: '动画片', type: 'anime' },
   { id: '19', label: '纪录片', type: 'documentary' },
-  { id: '21', label: '电视直播', type: 'other' },
 ];
 
 const CAT_TYPE = new Map();
@@ -379,13 +378,14 @@ export default function (hg) {
           if (!items.length) return;
           seenTitles.add(name);
           const tidMatch = norm(moreHref).match(/\/vod\/show\/id\/(\d+)/);
+          const tid = tidMatch && CAT_TYPE.has(tidMatch[1]) ? tidMatch[1] : '';
           const section = {
-            id: tidMatch ? `cat:${tidMatch[1]}` : `s${sections.length}`,
+            id: tid ? `cat:${tid}` : `s${sections.length}`,
             title: name.slice(0, 200),
             layout,
             items,
           };
-          if (tidMatch) section.more = true;
+          if (tid) section.more = true;
           sections.push(section);
         };
 

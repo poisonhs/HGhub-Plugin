@@ -138,8 +138,8 @@
     {
       "id": "yingxi.source",
       "name": "影夕视频",
-      "version": "1.0.0",
-      "description": "影夕视频采集单文件数据源：六个频道（可展开电影/剧集子类，支持地区、首字母与排序筛选）、搜索、详情与直连播放；播放页 player_aaaa 明文给地址，站内 m3u8proxy 的真实 CDN 地址自行还原",
+      "version": "1.0.1",
+      "description": "影夕视频采集单文件数据源：电影、电视剧（含子类）、综艺、动画片、纪录片五个频道，支持地区、首字母与排序筛选，搜索、详情与直连播放；播放页 player_aaaa 明文给地址，站内 m3u8proxy 的真实 CDN 地址自行还原",
       "url": "../plugins/yingxi.source.js"
     }
   ]
