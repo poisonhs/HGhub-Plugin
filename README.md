@@ -24,7 +24,7 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `cg91.source` 91吃瓜 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `av591.source` 591AV | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `huangguo.source` 黄果短剧 | 首页 / 分类 / 榜单 / 搜索 / 详情 / 播放 / 图文 | 成人内容，需在设置里开启 |
-| `dbku.source` 独播库 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | 站内只有一条线路，取流无签名 |
+| `dbku.source` 独播库 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | |
 
 ```
 manifest/manifest.json      插件列表，订阅入口
