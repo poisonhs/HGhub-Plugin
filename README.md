@@ -72,6 +72,6 @@ https://raw.githubusercontent.com/poisonhs/HGhub-Plugin/main/manifest/manifest.j
 ## 说明
 
 - 不需要账号，不读写片库以外的数据，插件只在被调用时运行。
-- `tangxin.vlog`、`av321.source`、`hanime16.source`、`ck69.source`、`hlws.source` 与 `chengguo.source` 声明了 `meta.mature`，宿主默认隐藏，需在设置里允许成人内容后才会出现。
+- `tangxin.vlog`、`av321.source`、`hanime16.source`、`hlws.source` 与 `chengguo.source` 声明了 `meta.mature`，宿主默认隐藏，需在设置里允许成人内容后才会出现。
 - 数据与播放地址来自上游采集接口，站点换域名或改接口会导致插件失效；换地址时改 `plugins/bfzy.source.js` 顶部的 `API` 常量。
 - 流地址有时效，播放中途失效时宿主会带 `reason: "refresh"` 重新调用插件解析。
