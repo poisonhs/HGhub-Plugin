@@ -1,7 +1,7 @@
 export const meta = {
   id: 'hhkan.source',
   name: '好好看',
-  version: '1.0.0',
+  version: '1.0.1',
   protocol: 1,
   kind: 'source',
   description: '好好看（hhkan1.com）：首页分区、五个频道、关键词搜索、详情与多线路 HLS。站点用 cdndefend 的 JS 挑战挡爬虫，插件里把那道 SHA1 工作量证明直接算出来拿 cookie，全程不需要浏览器。',
@@ -16,8 +16,10 @@ export const meta = {
 const SITE = 'https://www.hhkan1.com';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-// 站点把封面放在 /vod1/... 的相对路径上，实际由图片域名承载。
-const IMAGE_BASE = 'https://www.hhkan1.com';
+// 封面在页面里是 /vod1/... 的相对路径。主站那条路径要过 cdndefend 且直接回 403，
+// 真正的图片域名是 vres.*；实测该域名不需要 cookie，是最省事的取法。
+const IMAGE_BASE = 'https://vres.jzxjlj.com';
+const IMAGE_PREFIX = '/vod1/';
 const COOKIE_KEY = 'cdndefend.cookie.v1';
 // 挑战种子里第几位是校验偏移：n1 = parseInt(c[0], 16)，目标字节是 0xb0 0x0b。
 const TARGET = [0xb0, 0x0b];
@@ -142,8 +144,26 @@ export default function (hg) {
     const url = trim(raw);
     if (!url) return '';
     if (url.startsWith('//')) return `https:${url}`;
-    if (url.startsWith('/')) return `${IMAGE_BASE}${url}`;
+    if (url.startsWith(IMAGE_PREFIX)) return `${IMAGE_BASE}${url}`;
+    if (url.startsWith('/')) return `${SITE}${url}`;
     return /^https?:\/\//i.test(url) ? url : '';
+  }
+
+  // 卡片里有两张 img：第一张是 id=noneCoverImg 的占位图，真封面在第二张。
+  const PLACEHOLDER_RE = /(?:logo_placeholder|noneCoverImg|\/images\/p\/logo|empty-box|avatar|placeholder)/i;
+
+  function coverOfCard(anchor) {
+    for (const img of anchor.select('img')) {
+      for (const cand of [img.attr('data-original'), img.attr('data-src'), img.attr('src')]) {
+        const url = imageOf(cand);
+        if (url && !PLACEHOLDER_RE.test(url)) return url;
+      }
+    }
+    for (const cand of [anchor.attr('data-original'), anchor.attr('data-src')]) {
+      const url = imageOf(cand);
+      if (url && !PLACEHOLDER_RE.test(url)) return url;
+    }
+    return '';
   }
 
   function shortBadge(text) {
@@ -171,7 +191,7 @@ export default function (hg) {
       if (!title) continue;
       seen.add(m[1]);
       const item = { id: m[1], title: title.slice(0, 200), type: fallbackType || 'other' };
-      const cover = imageOf((img && (img.attr('data-original') || img.attr('data-src'))) || anchor.attr('data-original'));
+      const cover = coverOfCard(anchor);
       if (cover) item.cover = cover;
       const badge = shortBadge(holder && holder.first('.detail-note') && holder.first('.detail-note').text());
       if (badge) item.badge = badge;
@@ -354,8 +374,14 @@ export default function (hg) {
 
         const detail = { id, title: title.slice(0, 200), type: 'movie', playlists: [] };
 
-        const poster = doc.first('img[data-original]');
-        const cover = imageOf(poster && (poster.attr('data-original') || poster.attr('data-src')));
+        let cover = '';
+        for (const img of doc.select('img')) {
+          for (const cand of [img.attr('data-original'), img.attr('data-src'), img.attr('src')]) {
+            const url = imageOf(cand);
+            if (url && !PLACEHOLDER_RE.test(url)) { cover = url; break; }
+          }
+          if (cover) break;
+        }
         if (cover) detail.cover = cover;
 
         const descNode = doc.first('.detail-desc');
