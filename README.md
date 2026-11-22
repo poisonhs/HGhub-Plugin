@@ -26,6 +26,7 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `huangguo.source` 黄果短剧 | 首页 / 分类 / 榜单 / 搜索 / 详情 / 播放 / 图文 | 成人内容，需在设置里开启 |
 | `dbku.source` 独播库 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | |
 | `yingxi.source` 影夕视频 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | |
+| `hhkan.source` 好好看 | 首页 / 分类 / 搜索 / 详情 / 播放 | 站点有 cdndefend 的 JS 挑战，插件本地解；首条线路常是 App 独占，会自动切线路 |
 
 ```
 manifest/manifest.json      插件列表，订阅入口
@@ -49,6 +50,7 @@ plugins/av591.source.js     单文件插件
 plugins/huangguo.source.js  单文件插件
 plugins/dbku.source.js     单文件插件
 plugins/yingxi.source.js   单文件插件
+plugins/hhkan.source.js   单文件插件
 ```
 
 ## 订阅
