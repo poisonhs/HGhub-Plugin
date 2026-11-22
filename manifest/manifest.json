@@ -145,7 +145,7 @@
     {
       "id": "agedm.source",
       "name": "AGE动漫",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "AGE动漫采集单文件数据源：首页今日推荐与最近更新、目录八维筛选（版本/年份/地区/类型/状态/首字母/季度/资源）、搜索、详情与多线路 HLS；播放地址藏在第三方解析 iframe 里，由插件逐层取出并支持同集换线路",
       "url": "../plugins/agedm.source.js"
     }

@@ -1,7 +1,7 @@
 export const meta = {
   id: 'agedm.source',
   name: 'AGE动漫',
-  version: '1.0.0',
+  version: '1.0.1',
   protocol: 1,
   kind: 'source',
   description: 'AGE动漫（agedm.io，age.tv 跳转至此）：首页今日推荐与最近更新、目录八维筛选（版本/年份/地区/类型/首字母/季度/状态/资源）、搜索、详情与多线路 HLS。播放地址藏在第三方解析 iframe 里，插件走 播放页 → iframe → 解析页 三层取出 m3u8，并支持同集换线路。',
@@ -537,7 +537,7 @@ export default function (hg) {
         try {
           return { streams: [await resolveOne(id, group, ep, ctx)] };
         } catch (error) {
-          if (error && error.code === 'CANCELLED') throw error;
+          if (error && (error.code === 'CANCELLED' || error.code === 'RATE_LIMITED')) throw error;
           firstError = error;
           await markDead(id, group);
         }
@@ -548,7 +548,7 @@ export default function (hg) {
           const doc = await fetchDoc(`/detail/${id}`, ctx, 300);
           playlists = playlistsOf(doc);
         } catch (error) {
-          if (error && error.code === 'CANCELLED') throw error;
+          if (error && (error.code === 'CANCELLED' || error.code === 'RATE_LIMITED')) throw error;
         }
         for (const pl of playlists) {
           if (pl.id === group) continue;
@@ -557,7 +557,7 @@ export default function (hg) {
           try {
             return { streams: [await resolveOne(id, pl.id, ep, ctx)] };
           } catch (error) {
-            if (error && error.code === 'CANCELLED') throw error;
+            if (error && (error.code === 'CANCELLED' || error.code === 'RATE_LIMITED')) throw error;
             await markDead(id, pl.id);
           }
         }
