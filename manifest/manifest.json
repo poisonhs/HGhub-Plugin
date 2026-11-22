@@ -131,7 +131,7 @@
     {
       "id": "dbku.source",
       "name": "独播库",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "独播库采集单文件数据源：八个频道（地区/年代/类型/语言/排序筛选）、搜索、详情与 HLS 直连；播放页 player_data 的 Base64 + URL 编码自行还原",
       "url": "../plugins/dbku.source.js"
     }

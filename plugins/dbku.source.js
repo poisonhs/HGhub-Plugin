@@ -1,7 +1,7 @@
 export const meta = {
   id: 'dbku.source',
   name: '独播库',
-  version: '1.0.0',
+  version: '1.0.1',
   protocol: 1,
   kind: 'source',
   description: '独播库（dbku.tv）：macCMS myui 站，首页八个分区、八个频道（地区/年代/类型/语言/排序筛选）、搜索、详情与 HLS 直连。播放页 player_data 的 Base64 + URL 编码自行还原，取流无鉴权、无时效签名。',
@@ -56,6 +56,17 @@ function safeDecode(text) {
   } catch {
     return text;
   }
+}
+
+// 站点时间一律是北京时间（UTC+8，已用 /rss.xml 的 pubDate 校准），要换成 Unix 毫秒。
+function toMs(text) {
+  const m = norm(text).match(/(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if (!m) return undefined;
+  const ms = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] || 0) - 8, Number(m[5] || 0), Number(m[6] || 0));
+  if (!Number.isFinite(ms) || ms <= 0) return undefined;
+  // 兜底：算出来落在未来就不写，宁可不显示也不给出错误时间。
+  if (ms > Date.now() + 3600 * 1000) return undefined;
+  return Math.round(ms);
 }
 
 function showPath(tid, opts) {
@@ -157,6 +168,18 @@ export default function (hg) {
     return '';
   }
 
+  // badge 上限 8 字符：综艺的期号角标有 10 位，压成 MM-DD 才塞得下。
+  function shortBadge(text) {
+    const t = trim(text);
+    if (!t) return '';
+    if (t.length <= 8) return t;
+    const date = t.match(/(\d{4})(\d{2})(\d{2})/);
+    if (date) return `${date[2]}-${date[3]}`;
+    const count = t.match(/(\d+)\s*集/);
+    if (count) return `更至${count[1]}集`.slice(0, 8);
+    return '';
+  }
+
   function cardsOf(root, fallbackType) {
     const out = [];
     const seen = new Set();
@@ -172,8 +195,8 @@ export default function (hg) {
       if (cover) item.cover = cover;
       const parent = anchor.parent();
       const badgeNode = anchor.first('span.pic-text') || (parent && parent.first('span.pic-text'));
-      const badge = trim(badgeNode && badgeNode.text());
-      if (badge && badge.length <= 12) item.badge = badge;
+      const badge = shortBadge(badgeNode && badgeNode.text());
+      if (badge) item.badge = badge;
       out.push(item);
     }
     return out;
@@ -217,7 +240,8 @@ export default function (hg) {
         episodes: list.map((e, i) => ({
           id: `${sid}-${e.ep}`,
           index: i + 1,
-          label: e.label || `第${i + 1}集`,
+          episodeNumber: e.ep,
+          label: (e.label || `第${e.ep}集`).slice(0, 200),
         })),
       });
     }
@@ -486,14 +510,27 @@ export default function (hg) {
         }
         if (description) detail.description = description.slice(0, 5000);
 
+        const splitNames = value =>
+          norm(value)
+            .split(/[,，/、]/)
+            .map(s => s.trim().slice(0, 30))
+            .filter(Boolean);
+
         const tags = [];
-        if (catLabel) tags.push(...catLabel.split(/[,，/]/).map(s => s.trim()).filter(Boolean));
+        if (catLabel) tags.push(...splitNames(catLabel));
         if (year) tags.push(year);
         if (area) tags.push(area);
-        if (tags.length) detail.tags = Array.from(new Set(tags)).slice(0, 12);
-        if (actor) detail.cast = actor.split(/[,，/、]/).map(s => s.trim()).filter(Boolean).slice(0, 12);
-        if (director) detail.directors = director.split(/[,，/、]/).map(s => s.trim()).filter(Boolean).slice(0, 6);
-        if (updated) detail.updatedAt = updated;
+        if (tags.length) detail.tags = Array.from(new Set(tags)).slice(0, 20);
+        if (year) detail.year = Number(year) || undefined;
+
+        // MediaDetail 只认 people，演员/导演统一按角色塞进去。
+        const people = [];
+        for (const name of splitNames(director)) people.push({ name, role: '导演' });
+        for (const name of splitNames(actor)) people.push({ name, role: '演员' });
+        if (people.length) detail.people = people.slice(0, 30);
+
+        const updatedMs = toMs(updated);
+        if (updatedMs !== undefined) detail.updatedAt = updatedMs;
 
         // 面包屑里的频道 ID 最准，比详情页的分类字段可靠。
         const crumbTid = (norm((doc.select('#content-container a[href*="/vodtype/"]')[0] || { attr: () => '' }).attr('href')).match(/\/vodtype\/(\d+)\.html/) || [])[1] || '';
