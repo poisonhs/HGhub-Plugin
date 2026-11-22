@@ -1,7 +1,7 @@
 export const meta = {
   id: 'heiliao.source',
   name: '黑料网',
-  version: '1.0.1',
+  version: '1.0.2',
   protocol: 1,
   kind: 'source',
   description: '黑料网（heiliao.com）：首页最新、三十余个吃瓜分区、关键词搜索、详情与多线路 HLS 短剧。视频地址由服务端渲染进详情页的播放器配置，带 auth_key 直连，key 也是绝对地址。',
@@ -33,6 +33,11 @@ const RESERVED_SLUGS = new Set([
   'index', 'static', 'html', 'archives', 'search', 'page', 'user', 'login', 'register',
   'about', 'contact', 'faq', 'app', 'download', 'tags', 'tag', 'api', 'av', 'memora',
 ]);
+
+// 抽三条详情实测 m3u8 覆盖率，这几类全是图文或者没有点播源，列出来只会点进去空等：
+//   youliao 有料局 0/3   mrrb 日榜黑料 0/3   zbjx 周榜精选 0/3   ybrg 月榜热瓜 0/3
+//   jqxs 黑料小说 1/3    sjb 体育直播是流不是点播
+const EXCLUDED_SLUGS = new Set(['youliao', 'jqxs', 'sjb', 'mrrb', 'zbjx', 'ybrg']);
 
 const norm = s => (typeof s === 'string' ? s : '');
 const trim = s => norm(s).replace(/\s+/g, ' ').trim();
@@ -224,7 +229,7 @@ export default function (hg) {
     for (const anchor of doc.select('a')) {
       const href = norm(anchor.attr('href'));
       const m = href.match(HREF_CAT_RE);
-      if (!m || RESERVED_SLUGS.has(m[1])) continue;
+      if (!m || RESERVED_SLUGS.has(m[1]) || EXCLUDED_SLUGS.has(m[1])) continue;
       const label = trim(anchor.text());
       if (!label || label.length > 12) continue;
       if (seen.has(m[1])) continue;
