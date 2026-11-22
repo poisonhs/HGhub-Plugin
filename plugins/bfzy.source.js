@@ -1,7 +1,7 @@
 export const meta = {
   id: 'bfzy.source',
   name: '暴风资源',
-  version: '1.0.2',
+  version: '1.0.3',
   protocol: 1,
   kind: 'source',
   description: '暴风资源采集接口单文件数据源：搜索、分类、详情与 m3u8 直连播放。',
@@ -114,8 +114,40 @@ function flagLabel(flag) {
   return flag;
 }
 
-function streamUrlFrom(row, playlistId, episodeId) {
-  const groups = norm(row.vod_play_url).split('$$$');
+// 暴风的几个分发域名共用同一份 /video/{vod_en}/{段}/index.m3u8 目录结构，
+// 同一集的镜像可以互相对换。只把这组互认的列出来，其余 CDN（c1.*、p.*）各管各的，
+// 不在这组里的地址换过去只会 404，白等一轮。
+const MIRROR_HOSTS = ['bfeng11.com', 'v.fengbao14.com', 'fengbao13.com', 'v.baofeng9.com'];
+
+function mirrorsOf(url) {
+  const m = norm(url).match(/^(https?:\/\/)([^/]+)(\/.*)$/i);
+  if (!m) return [];
+  const host = m[2].toLowerCase();
+  if (!MIRROR_HOSTS.includes(host)) return [];
+  return MIRROR_HOSTS.filter(h => h !== host)
+    .slice(0, 2)
+    .map(h => `${m[1]}${h}${m[3]}`);
+}
+
+async function probeStream(hg, url, ctx) {
+  try {
+    const res = await hg.http.fetch({
+      url,
+      responseType: 'text',
+      headers: { Referer: 'https://bfzyapi.com/' },
+      timeoutMs: 6000,
+      maxBytes: 512 * 1024,
+      retry: 0,
+      signal: ctx.signal,
+    });
+    return res.ok && norm(res.data).trimStart().startsWith('#EXTM3U');
+  } catch (error) {
+    if (error && error.code === 'CANCELLED') throw error;
+    return false;
+  }
+}
+
+function streamUrlFrom(row, playlistId, episodeId) {  const groups = norm(row.vod_play_url).split('$$$');
   const gi = Number((String(playlistId).match(/^p(\d+)$/) || [])[1]);
   const groupIdx = Number.isInteger(gi) ? gi : 0;
   const group = groups[groupIdx] || '';
@@ -281,32 +313,23 @@ export default hg => {
           label: episode.label,
         };
 
-        // 采集接口给的地址是硬编码在数据里的，站点换 CDN 就会留下死链。
-        // 先探一次，把「地址已失效」和「播不了」分开报，别让用户对着转圈猜。
-        const probe = await hg.http.fetch({
-          url,
-          responseType: 'text',
-          headers: { Referer: 'https://bfzyapi.com/' },
-          timeoutMs: 8000,
-          maxBytes: 512 * 1024,
-          retry: 0,
-          signal: ctx.signal,
-        }).catch(error => {
-          if (error && error.code === 'CANCELLED') throw error;
-          return null;
-        });
-        if (probe && probe.ok && norm(probe.data).trimStart().startsWith('#EXTM3U')) {
+        // 采集接口给的地址是硬编码在数据里的，站点会换 CDN，旧的就成了死链。
+        // 但「我这台机器探不通」不等于「播不了」——线路、劫持、edge 回源差异都会让
+        // 探测失败而播放器照样能播。所以探测只用来找镜像，绝不拿它拦播放。
+        if (await probeStream(hg, url, ctx)) {
           return { streams: [stream] };
         }
-        if (probe && !probe.ok) {
-          throw new hg.PluginError(
-            'CONTENT_LOCKED',
-            probe.status === 403 || probe.status === 404
-              ? '片源已失效，换一集或换一部试试'
-              : `片源返回 ${probe.status}，稍后再试`
-          );
+        // 原地址探不通就并行试同组镜像，哪个能出清单用哪个。
+        const alts = mirrorsOf(url);
+        if (alts.length) {
+          const hit = (
+            await Promise.all(alts.map(alt => probeStream(hg, alt, ctx).then(ok => (ok ? alt : null))))
+          ).find(Boolean);
+          if (hit) return { streams: [{ ...stream, url: hit }] };
         }
-        throw new hg.PluginError('CONTENT_LOCKED', '片源没有响应，稍后再试');
+        // 原地址和镜像都探不通，仍然原样交出去：宿主的播放器有自己的重试和 refresh，
+        // 由它判死比插件替用户判死更靠谱。
+        return { streams: [stream] };
       },
     },
   };
