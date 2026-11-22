@@ -141,13 +141,6 @@
       "version": "1.0.1",
       "description": "影夕视频采集单文件数据源：电影、电视剧（含子类）、综艺、动画片、纪录片五个频道，支持地区、首字母与排序筛选，搜索、详情与直连播放；播放页 player_aaaa 明文给地址，站内 m3u8proxy 的真实 CDN 地址自行还原",
       "url": "../plugins/yingxi.source.js"
-    },
-    {
-      "id": "agedm.source",
-      "name": "AGE动漫",
-      "version": "1.0.2",
-      "description": "AGE动漫采集单文件数据源：首页今日推荐与最近更新、目录八维筛选（版本/年份/地区/类型/状态/首字母/季度/资源）、搜索、详情与多线路 HLS；播放地址藏在第三方解析 iframe 里，由插件逐层取出并支持同集换线路",
-      "url": "../plugins/agedm.source.js"
     }
   ]
 }
