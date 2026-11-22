@@ -10,7 +10,6 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `tangxin.vlog` 糖心Vlog | 首页 / 演员·标签 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `av321.source` 321AV | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `hanime16.source` H動漫 hanime16 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
-| `ck69.source` 黄色仓库 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `juzong.source` 剧踪影院 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
 | `hlws.source` 51黑料 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `chengguo.source` 橙果短剧 | 首页 / 频道 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
@@ -35,7 +34,6 @@ plugins/bfzy.source.js      单文件插件
 plugins/tangxin.vlog.js     单文件插件
 plugins/av321.source.js     单文件插件
 plugins/hanime16.source.js  单文件插件
-plugins/ck69.source.js      单文件插件
 plugins/juzong.source.js    单文件插件
 plugins/hlws.source.js      单文件插件
 plugins/chengguo.source.js  单文件插件
