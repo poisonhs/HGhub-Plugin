@@ -148,6 +148,13 @@
       "version": "1.0.2",
       "description": "好好看采集单文件数据源：首页分区、五个频道、关键词搜索、详情与多线路 HLS；站点用 cdndefend 的 SHA1 工作量证明挡爬虫，插件本地算出 cookie 自动过检",
       "url": "../plugins/hhkan.source.js"
+    },
+    {
+      "id": "heiliao.source",
+      "name": "黑料网",
+      "version": "1.0.0",
+      "description": "黑料网采集单文件数据源：首页最新、三十个吃瓜分区、关键词搜索、详情与多线路 HLS；视频地址由服务端渲染进播放器配置，带 auth_key 直连",
+      "url": "../plugins/heiliao.source.js"
     }
   ]
 }
