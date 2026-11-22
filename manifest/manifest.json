@@ -33,7 +33,7 @@
     {
       "id": "ck69.source",
       "name": "黄色仓库",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "黄色仓库（69ck1）：首页分区、五个分类、搜索、详情与 m3u8 直连",
       "url": "../plugins/ck69.source.js"
     },

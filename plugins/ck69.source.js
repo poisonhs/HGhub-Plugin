@@ -1,14 +1,14 @@
 export const meta = {
   id: 'ck69.source',
   name: '黄色仓库',
-  version: '1.0.0',
+  version: '1.0.1',
   protocol: 1,
   kind: 'source',
   description: '黄色仓库（69ck1）数据源：首页分区、五个分类、搜索、详情与 m3u8 直连。',
   mature: true,
   linkDomains: ['www.69ck1.com', '69ck1.com'],
   defaultHeaders: { Referer: 'https://www.69ck1.com/' },
-  timeouts: { read: 20, playback: 30 },
+  timeouts: { read: 10, playback: 30 },
 };
 
 const SITE = 'https://www.69ck1.com';
@@ -68,11 +68,22 @@ function cardsOf(root) {
 
 export default hg => {
   async function fetchDoc(path, ctx, ttl) {
-    const res = await hg.http.fetch({
-      url: path.startsWith('http') ? path : `${SITE}${path}`,
-      cache: { ttlSec: ttl || 300, staleIfErrorSec: 3600 },
-      signal: ctx.signal,
-    });
+    const url = path.startsWith('http') ? path : `${SITE}${path}`;
+    let res;
+    try {
+      res = await hg.http.fetch({
+        url,
+        cache: { ttlSec: ttl || 300, staleIfErrorSec: 3600 },
+        timeoutMs: 9000,
+        signal: ctx.signal,
+      });
+    } catch (error) {
+      if (error && (error.code === 'CANCELLED' || error.code === 'TIMEOUT')) {
+        // 站点这段时间 play/detail 两条路由不回包：TLS 通了但后端一直不响应。
+        throw new hg.PluginError('UPSTREAM_ERROR', '站点这条路由没有响应，稍后再试');
+      }
+      throw error;
+    }
     if (!res.ok) throw new hg.PluginError('UPSTREAM_ERROR', `站点返回 ${res.status}`);
     return hg.html.parse(res.data);
   }
@@ -188,6 +199,7 @@ export default hg => {
           url,
           method: 'HEAD',
           cache: { ttlSec: 600 },
+          timeoutMs: 8000,
           signal: ctx.signal,
         });
         if (!probe.ok) throw new hg.PluginError('CONTENT_LOCKED', `取流地址不可用（${probe.status}）`);
