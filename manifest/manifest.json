@@ -138,8 +138,8 @@
     {
       "id": "hhkan.source",
       "name": "好好看",
-      "version": "1.0.2",
-      "description": "好好看采集单文件数据源：首页分区、五个频道、关键词搜索、详情与多线路 HLS；站点用 cdndefend 的 SHA1 工作量证明挡爬虫，插件本地算出 cookie 自动过检",
+      "version": "1.0.3",
+      "description": "好好看采集单文件数据源：首页分区、五个频道、关键词搜索、详情与多线路 HLS；站点用 cdndefend 的 SHA1 工作量证明挡爬虫，插件用纯 JS 单块哈希本地算出 cookie，不消耗宿主原生调用",
       "url": "../plugins/hhkan.source.js"
     },
     {
