@@ -27,6 +27,7 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `dbku.source` 独播库 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | |
 | `yingxi.source` 影夕视频 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | 已隐藏电视直播频道；CDN 收到 Referer 就 403，默认头里不带 Referer |
 | `agedm.source` AGE动漫 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | 播放地址经第三方解析 iframe，站点有频率限制 |
+| `yinhuadm.source` 樱花动漫 | 首页 / 分类 / 搜索 / 详情 / 播放 | 站内片库页只有首屏可抓，翻页靠前端脚本，片库深度靠搜索补；播放地址为 AES 封装，插件本地还原 |
 
 ```
 manifest/manifest.json      插件列表，订阅入口
@@ -51,6 +52,7 @@ plugins/huangguo.source.js  单文件插件
 plugins/dbku.source.js     单文件插件
 plugins/yingxi.source.js   单文件插件
 plugins/agedm.source.js   单文件插件
+plugins/yinhuadm.source.js 单文件插件
 ```
 
 ## 订阅
