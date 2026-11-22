@@ -26,7 +26,7 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `huangguo.source` 黄果短剧 | 首页 / 分类 / 榜单 / 搜索 / 详情 / 播放 / 图文 | 成人内容，需在设置里开启 |
 | `dbku.source` 独播库 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | |
 | `yingxi.source` 影夕视频 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | 已隐藏电视直播频道；CDN 收到 Referer 就 403，默认头里不带 Referer |
-| `agedm.source` AGE动漫 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | 播放地址经第三方解析 iframe，站点有频率限制 |
+| `agedm.source` AGE动漫 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | 播放地址经第三方解析 iframe；OVA/剧场版多为站方会员线路，多线路的会自动换到能播的；站点有频率限制 |
 
 ```
 manifest/manifest.json      插件列表，订阅入口

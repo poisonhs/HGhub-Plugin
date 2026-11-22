@@ -1,7 +1,7 @@
 export const meta = {
   id: 'agedm.source',
   name: 'AGE动漫',
-  version: '1.0.1',
+  version: '1.0.2',
   protocol: 1,
   kind: 'source',
   description: 'AGE动漫（agedm.io，age.tv 跳转至此）：首页今日推荐与最近更新、目录八维筛选（版本/年份/地区/类型/首字母/季度/状态/资源）、搜索、详情与多线路 HLS。播放地址藏在第三方解析 iframe 里，插件走 播放页 → iframe → 解析页 三层取出 m3u8，并支持同集换线路。',
@@ -288,7 +288,7 @@ export default function (hg) {
     if (!iframe) throw new hg.PluginError('CONTENT_LOCKED', '这一集没有播放器入口');
     if (!/^https?:\/\//i.test(iframe)) throw new hg.PluginError('UPSTREAM_CHANGED', '播放器地址不是绝对地址');
     // /vip/ 是站方的会员线路，解析页只吐一段广告 mp4，没有正片。
-    if (/\/vip\//i.test(iframe)) throw new hg.PluginError('CONTENT_LOCKED', '这条线路要会员，换一条试试');
+    if (/\/vip\//i.test(iframe)) throw new hg.PluginError('CONTENT_LOCKED', '这条线路是站方会员专享');
     const parserHtml = await fetchText(iframe, ctx, 0);
     const url = parserUrlOf(parserHtml);
     if (!url) throw new hg.PluginError('CONTENT_LOCKED', '解析页没给出播放地址');
@@ -560,6 +560,14 @@ export default function (hg) {
             if (error && (error.code === 'CANCELLED' || error.code === 'RATE_LIMITED')) throw error;
             await markDead(id, pl.id);
           }
+        }
+        // 单线路的作品基本都是「只有会员线路」，别让用户以为换一条就能看。
+        const vipOnly = firstError && firstError.code === 'CONTENT_LOCKED' && /会员/.test(firstError.message);
+        if (vipOnly) {
+          throw new hg.PluginError(
+            'CONTENT_LOCKED',
+            playlists.length <= 1 ? '这部只有一条线路，且是站方会员专享' : '这部只有会员线路，其它线路也取不到地址'
+          );
         }
         throw firstError || new hg.PluginError('CONTENT_LOCKED', '所有线路都取不到地址，稍后再试');
       },
