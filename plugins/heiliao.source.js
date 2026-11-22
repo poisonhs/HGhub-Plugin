@@ -1,24 +1,31 @@
 export const meta = {
   id: 'heiliao.source',
   name: '黑料网',
-  version: '1.0.0',
+  version: '1.0.1',
   protocol: 1,
   kind: 'source',
   description: '黑料网（heiliao.com）：首页最新、三十余个吃瓜分区、关键词搜索、详情与多线路 HLS 短剧。视频地址由服务端渲染进详情页的播放器配置，带 auth_key 直连，key 也是绝对地址。',
   mature: true,
-  linkDomains: ['heiliao.com'],
+  linkDomains: ['heiliao.com', 'otdfytkw.cc', 'bspaawtn.cc', 'd1vpyad429lawp.cloudfront.net'],
   defaultHeaders: {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   },
   timeouts: { read: 25, playback: 30 },
 };
 
-const SITE = 'https://heiliao.com';
+// heiliao.com 走 Cloudflare，部分地区解析不出来；站方在 heiliao88.com 挂了三条
+// CloudFront 备用线路，内容完全一致。按顺序探，谁通用谁。
+const SITE_CANDIDATES = [
+  'https://heiliao.com',
+  'https://3jci2.otdfytkw.cc',
+  'https://9zie6.bspaawtn.cc',
+  'https://d1vpyad429lawp.cloudfront.net',
+];
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 const IMAGE_BASE = 'https://pic.biacea.cn';
-const SEARCH_API = `${SITE}/index/search_article`;
+const BASE_KEY = 'heiliao.base.v1';
 
-const DETAIL_RE = /^https?:\/\/heiliao\.com\/archives\/(\d+)\/?/i;
+const DETAIL_RE = /^https?:\/\/(?:heiliao\.com|[a-z0-9]+\.[a-z0-9-]+\.cc|d1vpyad429lawp\.cloudfront\.net)\/archives\/(\d+)\/?/i;
 const HREF_DETAIL_RE = /\/archives\/(\d+)\/?/;
 // 分类页是 /{slug}/ 这种短横段，排除静态与功能路径。
 const HREF_CAT_RE = /^\/([a-z]{2,12})\/$/;
@@ -38,7 +45,7 @@ function imageOf(raw) {
   const url = trim(raw);
   if (!url) return '';
   if (url.startsWith('//')) return `https:${url}`;
-  if (url.startsWith('/static/') || url.startsWith('/html/')) return `${SITE}${url}`;
+  if (url.startsWith('/static/') || url.startsWith('/html/')) return '';
   if (url.startsWith('/')) return `${IMAGE_BASE}${url}`;
   return /^https?:\/\//i.test(url) ? url : '';
 }
@@ -51,12 +58,57 @@ function shortBadge(text) {
 
 export default function (hg) {
   let catCache = null;
+  let baseCache = null;
+
+  // 先看缓存，再按候选顺序实测；DNS 挂掉的那条会抛 NETWORK，直接跳过。
+  async function siteBase(ctx) {
+    if (baseCache) return baseCache;
+    try {
+      const saved = await hg.storage.get(BASE_KEY);
+      if (saved && typeof saved.url === 'string' && saved.url) {
+        baseCache = saved.url;
+        return baseCache;
+      }
+    } catch {
+      // 缓存异常按无缓存处理
+    }
+    let lastError = null;
+    for (const base of SITE_CANDIDATES) {
+      try {
+        const res = await hg.http.fetch({
+          url: `${base}/`,
+          headers: { 'User-Agent': UA, Accept: 'text/html' },
+          timeoutMs: 8000,
+          maxBytes: 2 * 1024 * 1024,
+          retry: 0,
+          signal: ctx.signal,
+        });
+        if (res.ok && norm(res.data).includes('video-item')) {
+          baseCache = base;
+          try {
+            await hg.storage.set(BASE_KEY, { url: base, at: Date.now() });
+          } catch {
+            // 忽略缓存异常
+          }
+          return base;
+        }
+        lastError = new hg.PluginError('UPSTREAM_ERROR', `${base} 返回 ${res.status}`);
+      } catch (error) {
+        if (error && error.code === 'CANCELLED') throw error;
+        lastError = error;
+      }
+    }
+    throw lastError instanceof hg.PluginError
+      ? lastError
+      : new hg.PluginError('NETWORK', '主站和三条备用线路都连不上');
+  }
 
   async function fetchText(path, ctx, ttl) {
-    const url = /^https?:\/\//i.test(path) ? path : `${SITE}${path}`;
+    const base = await siteBase(ctx);
+    const url = /^https?:\/\//i.test(path) ? path : `${base}${path}`;
     const res = await hg.http.fetch({
       url,
-      headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml', Referer: `${SITE}/` },
+      headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml', Referer: `${base}/` },
       retry: 0,
       signal: ctx.signal,
       ...(ttl ? { cache: { ttlSec: ttl, staleIfErrorSec: 3600 } } : {}),
@@ -221,15 +273,16 @@ export default function (hg) {
         if (!query) return { items: [], next: null };
         const page = pageNo(params && params.cursor);
         const body = `word=${encodeURIComponent(query)}&page=${page}`;
+        const base = await siteBase(ctx);
         const res = await hg.http.fetch({
-          url: SEARCH_API,
+          url: `${base}/index/search_article`,
           method: 'POST',
           headers: {
             'User-Agent': UA,
             Accept: 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded',
-            Referer: `${SITE}/index/search?keyword=${encodeURIComponent(query)}`,
-            Origin: SITE,
+            Referer: `${base}/index/search?keyword=${encodeURIComponent(query)}`,
+            Origin: base,
           },
           body,
           responseType: 'json',
@@ -327,7 +380,7 @@ export default function (hg) {
             const probe = await hg.http.fetch({
               url: s.url,
               responseType: 'text',
-              headers: { 'User-Agent': UA, Referer: `${SITE}/` },
+              headers: { 'User-Agent': UA, Referer: `${await siteBase(ctx)}/` },
               timeoutMs: 8000,
               maxBytes: 512 * 1024,
               retry: 0,
