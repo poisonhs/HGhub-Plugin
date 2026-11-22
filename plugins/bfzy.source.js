@@ -1,12 +1,12 @@
 export const meta = {
   id: 'bfzy.source',
   name: '暴风资源',
-  version: '1.0.1',
+  version: '1.0.2',
   protocol: 1,
   kind: 'source',
   description: '暴风资源采集接口单文件数据源：搜索、分类、详情与 m3u8 直连播放。',
   defaultHeaders: { Referer: 'https://bfzyapi.com/' },
-  timeouts: { read: 20 },
+  timeouts: { read: 20, playback: 25 },
 };
 
 const API = 'https://bfzyapi.com/api.php/provide/vod/';
@@ -14,6 +14,10 @@ const TYPE_BY_ID = { 20: 'movie', 30: 'series', 39: 'anime', 45: 'variety', 58: 
 
 function mediaType(row) {
   const byId = TYPE_BY_ID[Number(row.type_id)];
+  // 采集站的「电影」栏目里混着大量连续剧，type_id 只说明挂在哪个栏目下。
+  // 真正决定界面的是集数：标成 movie 宿主就按电影渲染，分集列表出不来，点播放只能干等。
+  const serial = Number(row.vod_serial);
+  if (byId === 'movie' && Number.isFinite(serial) && serial > 1) return 'series';
   if (byId) return byId;
   const id = Number(row.type_id);
   if (id >= 40 && id <= 44) return 'anime';
@@ -226,6 +230,13 @@ export default hg => {
         const playlists = parsePlaylists(row);
         if (!playlists.length) throw new hg.PluginError('CONTENT_LOCKED', '该作品暂无可用播放地址');
         detail.playlists = playlists;
+        // vod_serial 经常是 0 或者干脆不给，以真正解析出来的集数为准。
+        const total = playlists[0].episodes.length;
+        if (total > 1) {
+          detail.type = 'series';
+          detail.episodeCount = total;
+          detail.totalEpisodes = total;
+        }
         const people = [];
         if (norm(row.vod_director)) people.push({ name: norm(row.vod_director), role: '导演' });
         if (norm(row.vod_actor))
@@ -244,13 +255,58 @@ export default hg => {
         const playlists = parsePlaylists(row);
         if (!playlists.length) throw new hg.PluginError('CONTENT_LOCKED', '该作品暂无可用播放地址');
         const playlist = playlists.find(p => p.id === params.playlistId) || playlists[0];
-        const episode = playlist.episodes.find(e => e.id === params.episodeId);
-        if (!episode) throw new hg.PluginError('INVALID_ARGUMENT', '分集不存在');
+
+        // 采集源的播放列表随时会被改写，集数、组顺序都可能变，宿主持有的 episodeId
+        // 未必还能精确命中。命中不了就退回按序号定位，再不行退第一集，
+        // 总之别把「分集找不到」这种内部状态当播放失败甩给用户。
+        const wanted = norm(params.episodeId);
+        let pos = playlist.episodes.findIndex(e => e.id === wanted);
+        if (pos < 0) {
+          const tail = wanted.match(/(\d+)$/);
+          const n = tail ? Number(tail[1]) : NaN;
+          if (Number.isInteger(n)) {
+            pos = playlist.episodes.findIndex(e => e.episodeNumber === n || e.index === n);
+            if (pos < 0 && n >= 1 && n <= playlist.episodes.length) pos = n - 1;
+          }
+        }
+        if (pos < 0) pos = 0;
+        const episode = playlist.episodes[pos];
+
         const url = streamUrlFrom(row, playlist.id, episode.id);
         if (!url) throw new hg.PluginError('UPSTREAM_CHANGED', '分集地址已失效');
-        return {
-          streams: [{ url, kind: 'media', format: /\.m3u8($|\?)/i.test(url) ? 'hls' : 'progressive', label: episode.label }],
+        const stream = {
+          url,
+          kind: 'media',
+          format: /\.m3u8($|\?)/i.test(url) ? 'hls' : 'progressive',
+          label: episode.label,
         };
+
+        // 采集接口给的地址是硬编码在数据里的，站点换 CDN 就会留下死链。
+        // 先探一次，把「地址已失效」和「播不了」分开报，别让用户对着转圈猜。
+        const probe = await hg.http.fetch({
+          url,
+          responseType: 'text',
+          headers: { Referer: 'https://bfzyapi.com/' },
+          timeoutMs: 8000,
+          maxBytes: 512 * 1024,
+          retry: 0,
+          signal: ctx.signal,
+        }).catch(error => {
+          if (error && error.code === 'CANCELLED') throw error;
+          return null;
+        });
+        if (probe && probe.ok && norm(probe.data).trimStart().startsWith('#EXTM3U')) {
+          return { streams: [stream] };
+        }
+        if (probe && !probe.ok) {
+          throw new hg.PluginError(
+            'CONTENT_LOCKED',
+            probe.status === 403 || probe.status === 404
+              ? '片源已失效，换一集或换一部试试'
+              : `片源返回 ${probe.status}，稍后再试`
+          );
+        }
+        throw new hg.PluginError('CONTENT_LOCKED', '片源没有响应，稍后再试');
       },
     },
   };
