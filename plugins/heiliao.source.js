@@ -1,7 +1,7 @@
 export const meta = {
   id: 'heiliao.source',
   name: '黑料网',
-  version: '1.0.2',
+  version: '1.0.3',
   protocol: 1,
   kind: 'source',
   description: '黑料网（heiliao.com）：首页最新、三十余个吃瓜分区、关键词搜索、详情与多线路 HLS 短剧。视频地址由服务端渲染进详情页的播放器配置，带 auth_key 直连，key 也是绝对地址。',
@@ -23,6 +23,10 @@ const SITE_CANDIDATES = [
 ];
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 const IMAGE_BASE = 'https://pic.biacea.cn';
+// 站内图不是标准图片，是 AES-128-CBC 密文。密钥在 /static/v4/__base/js/image.js 里
+// 用 cc("102_53_...") 这种十进制转字符的方式写死，解出来是下面这两串。
+const IMG_KEY_B64 = 'ZjVkOTY1ZGY3NTMzNjI3MA==';
+const IMG_IV_B64 = 'OTdiNjAzOTRhYmMyZmJlMQ==';
 const BASE_KEY = 'heiliao.base.v1';
 
 const DETAIL_RE = /^https?:\/\/(?:heiliao\.com|[a-z0-9]+\.[a-z0-9-]+\.cc|d1vpyad429lawp\.cloudfront\.net)\/archives\/(\d+)\/?/i;
@@ -53,6 +57,15 @@ function imageOf(raw) {
   if (url.startsWith('/static/') || url.startsWith('/html/')) return '';
   if (url.startsWith('/')) return `${IMAGE_BASE}${url}`;
   return /^https?:\/\//i.test(url) ? url : '';
+}
+
+// 封面必须带变换，直接给字符串地址宿主拿到的是一坨密文。
+function coverRef(url) {
+  if (!url) return null;
+  return {
+    url,
+    transform: { type: 'aes-cbc', key: IMG_KEY_B64, iv: IMG_IV_B64, padding: 'pkcs7' },
+  };
 }
 
 function shortBadge(text) {
@@ -138,11 +151,11 @@ export default function (hg) {
         anchor.text()
     );
     if (!title) return null;
-    const item = { id: m[1], title: title.slice(0, 200), type: 'other' };
+    const item = { id: m[1], title: title.slice(0, 200), type: 'short' };
     const img = anchor.first('img');
     if (img) {
-      const cover = imageOf(img.attr('z-image-loader-url') || img.attr('data-src') || img.attr('src'));
-      if (cover) item.cover = cover;
+      const ref = coverRef(imageOf(img.attr('z-image-loader-url') || img.attr('data-src') || img.attr('src')));
+      if (ref) item.cover = ref;
     }
     const hot = anchor.first('.ishot');
     if (hot) {
@@ -179,9 +192,9 @@ export default function (hg) {
       const title = trim(row && row.title);
       if (!/^\d+$/.test(id) || !title || seen.has(id)) continue;
       seen.add(id);
-      const item = { id, title: title.slice(0, 200), type: 'other' };
-      const cover = imageOf(row.thumb || row.thumb_show);
-      if (cover) item.cover = cover;
+      const item = { id, title: title.slice(0, 200), type: 'short' };
+      const ref = coverRef(imageOf(row.thumb || row.thumb_show));
+      if (ref) item.cover = ref;
       if (row.is_hot) item.badge = '热';
       out.push(item);
     }
@@ -335,7 +348,8 @@ export default function (hg) {
             if (cand && /pic\.biacea\.cn/i.test(cand)) { cover = cand; break; }
           }
         }
-        if (cover) detail.cover = cover;
+        const coverImg = coverRef(cover);
+        if (coverImg) detail.cover = coverImg;
 
         const streams = streamsOf(html);
         if (!streams.length) {

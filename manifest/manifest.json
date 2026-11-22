@@ -152,7 +152,7 @@
     {
       "id": "heiliao.source",
       "name": "黑料网",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "黑料网采集单文件数据源：首页最新、三十个吃瓜分区、关键词搜索、详情与多线路 HLS；视频地址由服务端渲染进播放器配置，带 auth_key 直连",
       "url": "../plugins/heiliao.source.js"
     }
