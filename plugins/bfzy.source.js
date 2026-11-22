@@ -1,7 +1,7 @@
 export const meta = {
   id: 'bfzy.source',
   name: '暴风资源',
-  version: '1.0.3',
+  version: '1.0.4',
   protocol: 1,
   kind: 'source',
   description: '暴风资源采集接口单文件数据源：搜索、分类、详情与 m3u8 直连播放。',
@@ -114,10 +114,24 @@ function flagLabel(flag) {
   return flag;
 }
 
-// 暴风的几个分发域名共用同一份 /video/{vod_en}/{段}/index.m3u8 目录结构，
-// 同一集的镜像可以互相对换。只把这组互认的列出来，其余 CDN（c1.*、p.*）各管各的，
-// 不在这组里的地址换过去只会 404，白等一轮。
-const MIRROR_HOSTS = ['bfeng11.com', 'v.fengbao14.com', 'fengbao13.com', 'v.baofeng9.com'];
+// 暴风的分发域名共用同一份 /video/{vod_en}/{段}/index.m3u8 目录结构，同一集常被复制到
+// 好几个域名上，可以按 host 对换。但覆盖是逐个资源复制的，不保证通——
+// 实测《牧神记》第 1–59 集里，v.fengbao8.com 有 59/59，c1.rrcdnbf6/5 各只有前 31 集，
+// 其余域名一条都没有。所以这里不做「谁是谁的镜像」的假设，全量并列去试，谁出清单用谁。
+const MIRROR_HOSTS = [
+  'c1.rrcdnbf6.com',
+  'c1.rrcdnbf5.com',
+  'c1.rrcdnbf4.com',
+  'c1.ddbbffcdn.com',
+  'v.fengbao8.com',
+  'v.fengbao14.com',
+  'fengbao13.com',
+  'v.baofeng9.com',
+  'bfeng11.com',
+  's3.bfllvip.com',
+  'p.bvvvvvvv7f.com',
+  'p.bvvvvvvvvv1f.com',
+];
 
 function mirrorsOf(url) {
   const m = norm(url).match(/^(https?:\/\/)([^/]+)(\/.*)$/i);
@@ -125,7 +139,7 @@ function mirrorsOf(url) {
   const host = m[2].toLowerCase();
   if (!MIRROR_HOSTS.includes(host)) return [];
   return MIRROR_HOSTS.filter(h => h !== host)
-    .slice(0, 2)
+    .slice(0, 6)
     .map(h => `${m[1]}${h}${m[3]}`);
 }
 
@@ -262,10 +276,10 @@ export default hg => {
         const playlists = parsePlaylists(row);
         if (!playlists.length) throw new hg.PluginError('CONTENT_LOCKED', '该作品暂无可用播放地址');
         detail.playlists = playlists;
-        // vod_serial 经常是 0 或者干脆不给，以真正解析出来的集数为准。
+        // 单集还是多集只看真正解析出来的集数；动漫别被硬掰成剧集，只把电影改判。
         const total = playlists[0].episodes.length;
         if (total > 1) {
-          detail.type = 'series';
+          if (detail.type === 'movie') detail.type = 'series';
           detail.episodeCount = total;
           detail.totalEpisodes = total;
         }
