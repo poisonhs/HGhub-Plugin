@@ -1,11 +1,11 @@
 export const meta = {
   id: 'hl365.source',
   name: '黑料不打烊',
-  version: '1.0.0',
+  version: '1.0.1',
   protocol: 1,
   kind: 'source',
   description:
-    '黑料不打烊（hl365.com）：Typecho + Mirages 主题，首页最新流、二十一个吃瓜分区、关键词搜索、详情与分集 HLS。播放地址由服务端渲染进播放器 data-config，带 auth_key 直连，key 与切片都是绝对地址。',
+    '黑料不打烊（hl365.com）：Typecho + Mirages 主题，首页最新流、二十个吃瓜分区、关键词搜索、详情与分集 HLS。播放地址由服务端渲染进播放器 data-config，带 auth_key 直连，key 与切片都是绝对地址。',
   mature: true,
   linkDomains: ['hl365.com', 'pic.biacea.cn', 'micgqv.cn', 'ucjosl.cn'],
   defaultHeaders: {
@@ -22,8 +22,9 @@ const UA =
 // 抽十条详情实测播放器覆盖率，这两类基本是图文图集，列出来只会点进去空等：
 //   whzj 网黄专辑 2/10（清一色「持续更新中」的图册帖）
 //   mrrg 每日热瓜 4/10（大半是「合集」图文，视频散落在少数帖里）
-// 其余二十一类都在 80% 以上，24hcg/hlda/rgtj 有零星图文帖，留在分类里由详情页挡掉。
-const EXCLUDED_SLUGS = new Set(['whzj', 'mrrg']);
+// 优选投放有视频，但整版是世界杯、球星绯闻一类搬运稿，不跟站内主打同路，按需求不收录。
+// 其余二十类都在 80% 以上，24hcg/hlda/rgtj 有零星图文帖，留在分类里由详情页挡掉。
+const EXCLUDED_SLUGS = new Set(['whzj', 'mrrg', 'youxuan']);
 
 const RESERVED_SLUGS = new Set([
   'index', 'static', 'archives', 'search', 'page', 'user', 'login', 'register',

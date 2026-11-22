@@ -152,8 +152,8 @@
     {
       "id": "hl365.source",
       "name": "黑料不打烊",
-      "version": "1.0.0",
-      "description": "黑料不打烊采集单文件数据源：首页最新流、二十一个吃瓜分区、关键词搜索、详情与分集 HLS；播放地址在播放器 data-config 里带 auth_key 直连，封面走加密图床由宿主解密",
+      "version": "1.0.1",
+      "description": "黑料不打烊采集单文件数据源：首页最新流、二十个吃瓜分区、关键词搜索、详情与分集 HLS；播放地址在播放器 data-config 里带 auth_key 直连，封面走加密图床由宿主解密",
       "url": "../plugins/hl365.source.js"
     }
   ]
