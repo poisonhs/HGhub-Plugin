@@ -1,7 +1,7 @@
 export const meta = {
   id: 'hhkan.source',
   name: '好好看',
-  version: '1.0.1',
+  version: '1.0.2',
   protocol: 1,
   kind: 'source',
   description: '好好看（hhkan1.com）：首页分区、五个频道、关键词搜索、详情与多线路 HLS。站点用 cdndefend 的 JS 挑战挡爬虫，插件里把那道 SHA1 工作量证明直接算出来拿 cookie，全程不需要浏览器。',
@@ -29,6 +29,15 @@ const DETAIL_RE = /^https?:\/\/(?:www\.)?hhkan1\.com\/detail\/(\d+)\.html/i;
 const PLAY_RE = /^https?:\/\/(?:www\.)?hhkan1\.com\/play\/(\d+)-(\d+)-(\d+)\.html/i;
 const HREF_DETAIL_RE = /\/detail\/(\d+)\.html/;
 const HREF_PLAY_RE = /\/play\/(\d+)-(\d+)-(\d+)\.html/;
+
+const CATS = [
+  { id: '1', label: '电影', type: 'movie' },
+  { id: '2', label: '电视剧', type: 'series' },
+  { id: '3', label: '动漫', type: 'anime' },
+  { id: '4', label: '综艺', type: 'variety' },
+  { id: '6', label: '短剧', type: 'short' },
+];
+const CAT_TYPE = new Map(CATS.map(c => [c.id, c.type]));
 
 const norm = s => (typeof s === 'string' ? s : '');
 const trim = s => norm(s).replace(/\s+/g, ' ').trim();
@@ -317,13 +326,7 @@ export default function (hg) {
 
     catalog: {
       async getCategories() {
-        return [
-          { id: '1', label: '电影', type: 'movie' },
-          { id: '2', label: '电视剧', type: 'series' },
-          { id: '3', label: '综艺', type: 'variety' },
-          { id: '4', label: '动漫', type: 'anime' },
-          { id: '6', label: '纪录片', type: 'documentary' },
-        ];
+        return CATS.map(c => ({ id: c.id, label: c.label }));
       },
 
       async list(params, ctx) {
@@ -332,7 +335,7 @@ export default function (hg) {
         const page = pageNo(params && params.cursor);
         const path = page > 1 ? `/channel/${tid}-${page}.html` : `/channel/${tid}.html`;
         const doc = await fetchDoc(path, ctx, 120);
-        const items = cardsOf(doc, 'other');
+        const items = cardsOf(doc, CAT_TYPE.get(tid) || 'other');
         const out = { items };
         if (items.length >= 24) out.next = String(page + 1);
         return out;
