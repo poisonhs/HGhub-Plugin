@@ -166,8 +166,8 @@
     {
       "id": "kanliao.source",
       "name": "今日看料",
-      "version": "1.0.0",
-      "description": "今日看料（kanliao20.org）单文件数据源：首页最新、十一个分区、关键词搜索、详情与 HLS 回放；视频地址由服务端渲染进播放器 data-config，明文 m3u8 直连；导流外链帖会直接说明",
+      "version": "1.0.1",
+      "description": "今日看料（kanliao20.org）单文件数据源：首页最新、十一个分区、关键词搜索、详情与 HLS 回放；主域名解析不出来时自动切两个同内容备用域名；视频地址由服务端渲染进播放器 data-config，明文 m3u8 直连；导流外链帖会直接说明",
       "url": "../plugins/kanliao.source.js"
     }
   ]

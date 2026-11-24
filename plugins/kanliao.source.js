@@ -1,13 +1,13 @@
 export const meta = {
   id: 'kanliao.source',
   name: '今日看料',
-  version: '1.0.0',
+  version: '1.0.1',
   protocol: 1,
   kind: 'source',
   description:
-    '今日看料（kanliao20.org）：Typecho + Mirages 主题。首页与十一个分区、关键词搜索、详情与 HLS 回放。视频地址由服务端渲染进播放器 data-config，明文 m3u8 直连；部分帖子只是导流外链，插件会直接说明。',
+    '今日看料（kanliao20.org）：Typecho + Mirages 主题。首页与十一个分区、关键词搜索、详情与 HLS 回放。视频地址由服务端渲染进播放器 data-config，明文 m3u8 直连；主域名在部分地区解析不出来，会自动切两个同内容的备用域名；部分帖子只是导流外链，插件会直接说明。',
   mature: true,
-  linkDomains: ['kanliao20.org', 'henxihuan-ma.top'],
+  linkDomains: ['kanliao20.org', 'kanliao20.net', 'kanliao20.cyou', 'henxihuan-ma.top'],
   defaultHeaders: {
     'User-Agent':
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
@@ -15,11 +15,19 @@ export const meta = {
   timeouts: { read: 20, playback: 25 },
 };
 
-const BASE = 'https://www.kanliao20.org';
+// 主站在 Cloudflare 上，部分地区直接解析不出来。站方另挂了两个同内容域名
+// （首页 article id 列表逐条比对过，完全一致），按顺序探，谁通用谁。
+const SITE_CANDIDATES = [
+  'https://www.kanliao20.org',
+  'https://www.kanliao20.net',
+  'https://www.kanliao20.cyou',
+];
+const BASE = SITE_CANDIDATES[0];
+const BASE_KEY = 'kanliao.base.v1';
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-const DETAIL_RE = /^https?:\/\/(?:www\.)?kanliao20\.org\/archives\/(\d+)/i;
+const DETAIL_RE = /^https?:\/\/(?:www\.)?kanliao20\.(?:org|net|cyou)\/archives\/(\d+)/i;
 const HREF_DETAIL_RE = /\/archives\/(\d+)\/?/;
 const HREF_CAT_RE = /^\/category\/([a-z0-9]{2,12})\/$/i;
 
@@ -49,25 +57,87 @@ function imageOf(raw) {
 
 export default function (hg) {
   let catCache = null;
+  let baseCache = null;
+
+  // 先看缓存，再按候选顺序实测。解析失败的那条会抛 NETWORK，直接跳过。
+  async function siteBase(ctx, force) {
+    if (baseCache && !force) return baseCache;
+    if (!force) {
+      try {
+        const saved = await hg.storage.get(BASE_KEY);
+        if (saved && typeof saved.url === 'string' && saved.url) {
+          baseCache = saved.url;
+          return baseCache;
+        }
+      } catch {
+        // 缓存异常按无缓存处理
+      }
+    }
+    let lastError = null;
+    for (const base of SITE_CANDIDATES) {
+      try {
+        const res = await hg.http.fetch({
+          url: `${base}/`,
+          headers: { 'User-Agent': UA, Accept: 'text/html' },
+          timeoutMs: 8000,
+          maxBytes: 2 * 1024 * 1024,
+          retry: 0,
+          signal: ctx.signal,
+        });
+        if (res.ok && norm(res.data).includes('/archives/')) {
+          baseCache = base;
+          try {
+            await hg.storage.set(BASE_KEY, { url: base, at: Date.now() });
+          } catch {
+            // 忽略缓存异常
+          }
+          return base;
+        }
+        lastError = new hg.PluginError('UPSTREAM_ERROR', `${base} 返回 ${res.status}`);
+      } catch (error) {
+        if (error && error.code === 'CANCELLED') throw error;
+        lastError = error;
+      }
+    }
+    throw lastError instanceof hg.PluginError
+      ? lastError
+      : new hg.PluginError('NETWORK', '主站和两个备用域名都连不上');
+  }
 
   async function fetchText(path, ctx, ttl) {
-    const url = /^https?:\/\//i.test(path) ? path : `${BASE}${path}`;
-    const res = await hg.http.fetch({
-      url,
-      headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml', Referer: `${BASE}/` },
-      retry: 0,
-      signal: ctx.signal,
-      ...(ttl ? { cache: { ttlSec: ttl, staleIfErrorSec: 900 } } : {}),
-    });
-    // 一部分帖子根本不给内容，301 到 /go/xxx/ 再转到广告联盟的落地页。
-    // 跟随后 URL 已经不在本站，按「没有片源」处理，别让用户以为网络坏了。
-    const landed = norm(res.url);
-    if (landed && !/^https?:\/\/(?:www\.)?kanliao20\.org\//i.test(landed) && !/^https?:\/\//i.test(path)) {
-      throw new hg.PluginError('CONTENT_LOCKED', '这条帖子只是导流外链，站内没有片源');
+    const full = /^https?:\/\//i.test(path);
+    let lastError = null;
+    // 第一次用记住的域名；连不上就强制重新探一轮，防止旧域名一直挂着。
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const base = full ? '' : await siteBase(ctx, attempt > 0);
+      const url = full ? path : `${base}${path}`;
+      try {
+        const res = await hg.http.fetch({
+          url,
+          headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml', Referer: `${base || BASE}/` },
+          retry: 0,
+          signal: ctx.signal,
+          ...(ttl ? { cache: { ttlSec: ttl, staleIfErrorSec: 900 } } : {}),
+        });
+        // 一部分帖子根本不给内容，301 到 /go/xxx/ 再转到广告联盟落地页。
+        // 跟随后 URL 已经不在本站，按「没有片源」处理，别让用户以为网络坏了。
+        const landed = norm(res.url);
+        if (landed && !/^https?:\/\/(?:www\.)?kanliao20\.(?:org|net|cyou)\//i.test(landed) && !full) {
+          throw new hg.PluginError('CONTENT_LOCKED', '这条帖子只是导流外链，站内没有片源');
+        }
+        if (res.status === 404) throw new hg.PluginError('NOT_FOUND', '内容不存在或已下架');
+        if (!res.ok) throw new hg.PluginError('UPSTREAM_ERROR', `站点返回 ${res.status}`);
+        return norm(res.data);
+      } catch (error) {
+        if (error && (error.code === 'CANCELLED' || error.code === 'CONTENT_LOCKED' || error.code === 'NOT_FOUND')) {
+          throw error;
+        }
+        lastError = error;
+      }
     }
-    if (res.status === 404) throw new hg.PluginError('NOT_FOUND', '内容不存在或已下架');
-    if (!res.ok) throw new hg.PluginError('UPSTREAM_ERROR', `站点返回 ${res.status}`);
-    return norm(res.data);
+    throw lastError instanceof hg.PluginError
+      ? lastError
+      : new hg.PluginError('NETWORK', '站点连不上，换一条备用域名也没通');
   }
 
   async function fetchDoc(path, ctx, ttl) {
@@ -114,7 +184,7 @@ export default function (hg) {
     const seen = new Map();
     for (const anchor of doc.select('a')) {
       const href = norm(anchor.attr('href'));
-      const m = href.match(HREF_CAT_RE) || href.match(/^https?:\/\/(?:www\.)?kanliao20\.org\/category\/([a-z0-9]{2,12})\/$/i);
+      const m = href.match(HREF_CAT_RE) || href.match(/^https?:\/\/(?:www\.)?kanliao20\.(?:org|net|cyou)\/category\/([a-z0-9]{2,12})\/$/i);
       if (!m) continue;
       const slug = m[1].toLowerCase();
       if (seen.has(slug)) continue;
@@ -272,7 +342,7 @@ export default function (hg) {
         const raw = trim(params && params.url);
         const d = raw.match(DETAIL_RE);
         if (d) return { mediaId: d[1] };
-        const c = raw.match(/^https?:\/\/(?:www\.)?kanliao20\.org\/category\/([a-z0-9]{2,12})\/?/i);
+        const c = raw.match(/^https?:\/\/(?:www\.)?kanliao20\.(?:org|net|cyou)\/category\/([a-z0-9]{2,12})\/?/i);
         if (c) return { categoryId: c[1].toLowerCase() };
         return null;
       },
