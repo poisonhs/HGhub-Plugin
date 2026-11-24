@@ -1,13 +1,13 @@
 export const meta = {
   id: 'kanliao.source',
   name: '今日看料',
-  version: '1.0.1',
+  version: '1.0.3',
   protocol: 1,
   kind: 'source',
   description:
-    '今日看料（kanliao20.org）：Typecho + Mirages 主题。首页与十一个分区、关键词搜索、详情与 HLS 回放。视频地址由服务端渲染进播放器 data-config，明文 m3u8 直连；主域名在部分地区解析不出来，会自动切两个同内容的备用域名；部分帖子只是导流外链，插件会直接说明。',
+    '今日看料（kanliao20.org）：Typecho + Mirages 主题。首页与十一个分区、关键词搜索、详情与 HLS 回放。视频地址由服务端渲染进播放器 data-config，明文 m3u8 直连；主域名在部分地区解析不出来，会自动切三个同内容的备用域名；部分帖子只是导流外链，插件会直接说明。',
   mature: true,
-  linkDomains: ['kanliao20.org', 'kanliao20.net', 'kanliao20.cyou', 'henxihuan-ma.top'],
+  linkDomains: ['kanliao20.org', 'kanliao7.org', 'kanliao20.net', 'kanliao20.cyou', 'henxihuan-ma.top'],
   defaultHeaders: {
     'User-Agent':
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
@@ -15,10 +15,12 @@ export const meta = {
   timeouts: { read: 20, playback: 25 },
 };
 
-// 主站在 Cloudflare 上，部分地区直接解析不出来。站方另挂了两个同内容域名
-// （首页 article id 列表逐条比对过，完全一致），按顺序探，谁通用谁。
+// 主站在 Cloudflare 上，部分地区直接解析不出来、或者被污染成内网地址。
+// 站方另挂了三个同内容域名（首页 article id 列表逐条比对过，完全一致），
+// 按顺序探，谁通用谁。
 const SITE_CANDIDATES = [
   'https://www.kanliao20.org',
+  'https://www.kanliao7.org',
   'https://www.kanliao20.net',
   'https://www.kanliao20.cyou',
 ];
@@ -27,7 +29,9 @@ const BASE_KEY = 'kanliao.base.v1';
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-const DETAIL_RE = /^https?:\/\/(?:www\.)?kanliao20\.(?:org|net|cyou)\/archives\/(\d+)/i;
+const SITE_HOST = '(?:www\\.)?(?:kanliao20\\.(?:org|net|cyou)|kanliao7\\.org)';
+const SITE_HOST_RE = new RegExp(`^https?:\\/\\/${SITE_HOST}\\/`, 'i');
+const DETAIL_RE = new RegExp(`^https?:\\/\\/${SITE_HOST}\\/archives\\/(\\d+)`, 'i');
 const HREF_DETAIL_RE = /\/archives\/(\d+)\/?/;
 const HREF_CAT_RE = /^\/category\/([a-z0-9]{2,12})\/$/i;
 
@@ -73,8 +77,9 @@ export default function (hg) {
         // 缓存异常按无缓存处理
       }
     }
-    let lastError = null;
+    const reasons = [];
     for (const base of SITE_CANDIDATES) {
+      const host = base.replace(/^https?:\/\//, '');
       try {
         const res = await hg.http.fetch({
           url: `${base}/`,
@@ -93,15 +98,19 @@ export default function (hg) {
           }
           return base;
         }
-        lastError = new hg.PluginError('UPSTREAM_ERROR', `${base} 返回 ${res.status}`);
+        reasons.push(`${host}=HTTP ${res.status}`);
       } catch (error) {
         if (error && error.code === 'CANCELLED') throw error;
-        lastError = error;
+        // 宿主的网络策略会把「解析到 0.0.0.0 / 127.0.0.1」报成「禁止访问普通内网」，
+        // 这其实说明本机 DNS 被污染了，跟插件没关系，但原话用户看不懂，收拢一下。
+        const raw = norm(error && error.message);
+        reasons.push(`${host}=${/内网|回环|保留/.test(raw) ? '解析到无效地址' : norm(error && error.code) || '连不上'}`);
       }
     }
-    throw lastError instanceof hg.PluginError
-      ? lastError
-      : new hg.PluginError('NETWORK', '主站和两个备用域名都连不上');
+    throw new hg.PluginError(
+      'NETWORK',
+      `四个域名都连不上（${reasons.join('，')}）。这个站在部分网络会被 DNS 污染，换个 DNS 或关掉代理再试`
+    );
   }
 
   async function fetchText(path, ctx, ttl) {
@@ -122,7 +131,7 @@ export default function (hg) {
         // 一部分帖子根本不给内容，301 到 /go/xxx/ 再转到广告联盟落地页。
         // 跟随后 URL 已经不在本站，按「没有片源」处理，别让用户以为网络坏了。
         const landed = norm(res.url);
-        if (landed && !/^https?:\/\/(?:www\.)?kanliao20\.(?:org|net|cyou)\//i.test(landed) && !full) {
+        if (landed && !SITE_HOST_RE.test(landed) && !full) {
           throw new hg.PluginError('CONTENT_LOCKED', '这条帖子只是导流外链，站内没有片源');
         }
         if (res.status === 404) throw new hg.PluginError('NOT_FOUND', '内容不存在或已下架');
@@ -184,7 +193,7 @@ export default function (hg) {
     const seen = new Map();
     for (const anchor of doc.select('a')) {
       const href = norm(anchor.attr('href'));
-      const m = href.match(HREF_CAT_RE) || href.match(/^https?:\/\/(?:www\.)?kanliao20\.(?:org|net|cyou)\/category\/([a-z0-9]{2,12})\/$/i);
+      const m = href.match(HREF_CAT_RE) || href.match(new RegExp(`^https?:\\/\\/${SITE_HOST}\\/category\\/([a-z0-9]{2,12})\\/$`, 'i'));
       if (!m) continue;
       const slug = m[1].toLowerCase();
       if (seen.has(slug)) continue;
@@ -342,7 +351,7 @@ export default function (hg) {
         const raw = trim(params && params.url);
         const d = raw.match(DETAIL_RE);
         if (d) return { mediaId: d[1] };
-        const c = raw.match(/^https?:\/\/(?:www\.)?kanliao20\.(?:org|net|cyou)\/category\/([a-z0-9]{2,12})\/?/i);
+        const c = raw.match(new RegExp(`^https?:\\/\\/${SITE_HOST}\\/category\\/([a-z0-9]{2,12})\\/?`, 'i'));
         if (c) return { categoryId: c[1].toLowerCase() };
         return null;
       },
