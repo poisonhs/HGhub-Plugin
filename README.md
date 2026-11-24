@@ -26,6 +26,7 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `dbku.source` 独播库 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | |
 | `yingxi.source` 影夕视频 | 首页 / 分类 / 筛选 / 搜索 / 详情 / 播放 | |
 | `hhkan.source` 好好看 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
+| `pianku.source` 片库 | 首页 / 分类 / 搜索 / 详情 / 播放 | 只收录有直连 m3u8 的线路，正版平台跳转不发 |
 | `heiliao.source` 黑料网 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `hl365.source` 黑料不打烊 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 
@@ -51,6 +52,7 @@ plugins/huangguo.source.js  单文件插件
 plugins/dbku.source.js     单文件插件
 plugins/yingxi.source.js   单文件插件
 plugins/hhkan.source.js   单文件插件
+plugins/pianku.source.js  单文件插件
 plugins/heiliao.source.js 单文件插件
 plugins/hl365.source.js   单文件插件
 ```

@@ -155,6 +155,13 @@
       "version": "1.0.1",
       "description": "黑料不打烊采集单文件数据源：首页最新流、二十个吃瓜分区、关键词搜索、详情与分集 HLS；播放地址在播放器 data-config 里带 auth_key 直连，封面走加密图床由宿主解密",
       "url": "../plugins/hl365.source.js"
+    },
+    {
+      "id": "pianku.source",
+      "name": "片库",
+      "version": "1.0.0",
+      "description": "片库（4k01.pianku.online）单文件数据源：首页九宫分区、四个主分类、关键词搜索、详情与分集 HLS；播放页把片源写在 player_aaaa 里，只取直连 m3u8 的自有线路，腾讯/优酷/B站/爱奇艺的正版跳转自动滤掉",
+      "url": "../plugins/pianku.source.js"
     }
   ]
 }
