@@ -27,6 +27,7 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `hhkan.source` 好好看 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
 | `pianku.source` 片库 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
 | `dpw.source` 66大片网 | 首页 / 分类 / 详情 / 播放 | 需要关闭🛩️ |
+| `amj.source` 爱美剧 | 首页 / 分类 / 详情 / 播放 | |
 | `heiliao.source` 黑料网 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `hl365.source` 黑料不打烊 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 
@@ -53,6 +54,7 @@ plugins/yingxi.source.js   单文件插件
 plugins/hhkan.source.js   单文件插件
 plugins/pianku.source.js  单文件插件
 plugins/dpw.source.js     单文件插件
+plugins/amj.source.js     单文件插件
 plugins/heiliao.source.js 单文件插件
 plugins/hl365.source.js   单文件插件
 ```
