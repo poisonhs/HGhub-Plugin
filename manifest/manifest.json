@@ -155,6 +155,13 @@
       "version": "1.0.0",
       "description": "66大片网（77dpw.vip）单文件数据源：首页六区、五个频道分页、详情与分集 HLS；播放页片源是 base64+urlencode 密文，只取直连 m3u8 的极速线路，正版平台跳转自动滤掉；站内搜索要图形验证码，未提供",
       "url": "../plugins/dpw.source.js"
+    },
+    {
+      "id": "lovebox.source",
+      "name": "18PORNY",
+      "version": "1.0.0",
+      "description": "18PORNY（lovebox.xm0108.lol）单文件数据源：首页九区、九个主分区与四十一子分类分页、短剧集库、关键词搜索、单集详情与选集、HLS 直连；播放地址由播放页 player_aaaa 下发，m3u8、AES-128 密钥与切片都是绝对地址",
+      "url": "../plugins/lovebox.source.js"
     }
   ]
 }
