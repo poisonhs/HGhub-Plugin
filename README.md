@@ -14,7 +14,6 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `hlws.source` 51黑料 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `chengguo.source` 橙果短剧 | 首页 / 频道 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `jisu.source` 极速追剧 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
-| `zhuiying.source` 追影 | 首页 / 分类 / 搜索 / 详情 / 播放 | 需要关闭🛩️ |
 | `kxyy.source` 开心影院 | 首页 / 分类 / 搜索 / 详情 / 播放 | 需要关闭🛩️ |
 | `dhvideo.source` 豆花电影网 | 首页 / 分类 / 搜索 / 详情 / 播放 | 首集可能要等 3 MB 播放页，之后走缓存 |
 | `auete.source` Auete影视 | 首页 / 分类 / 详情 / 播放 | 站内搜索需图形验证码，未提供搜索 |
@@ -27,7 +26,6 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `hhkan.source` 好好看 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
 | `pianku.source` 片库 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
 | `dpw.source` 66大片网 | 首页 / 分类 / 详情 / 播放 | 需要关闭🛩️ |
-| `amj.source` 爱美剧 | 首页 / 分类 / 详情 / 播放 | |
 | `heiliao.source` 黑料网 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `hl365.source` 黑料不打烊 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 
@@ -41,7 +39,6 @@ plugins/juzong.source.js    单文件插件
 plugins/hlws.source.js      单文件插件
 plugins/chengguo.source.js  单文件插件
 plugins/jisu.source.js      单文件插件
-plugins/zhuiying.source.js  单文件插件
 plugins/kxyy.source.js      单文件插件
 plugins/dhvideo.source.js   单文件插件
 plugins/auete.source.js     单文件插件
@@ -54,7 +51,6 @@ plugins/yingxi.source.js   单文件插件
 plugins/hhkan.source.js   单文件插件
 plugins/pianku.source.js  单文件插件
 plugins/dpw.source.js     单文件插件
-plugins/amj.source.js     单文件插件
 plugins/heiliao.source.js 单文件插件
 plugins/hl365.source.js   单文件插件
 ```

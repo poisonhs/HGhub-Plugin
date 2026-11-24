@@ -59,13 +59,6 @@
       "url": "../plugins/jisu.source.js"
     },
     {
-      "id": "zhuiying.source",
-      "name": "追影",
-      "version": "1.0.2",
-      "description": "追影：首页九个分区、六个分类、搜索、详情与八线路解析；六个官方镜像自动轮换",
-      "url": "../plugins/zhuiying.source.js"
-    },
-    {
       "id": "kxyy.source",
       "name": "开心影院",
       "version": "1.0.0",
@@ -162,13 +155,6 @@
       "version": "1.0.0",
       "description": "66大片网（77dpw.vip）单文件数据源：首页六区、五个频道分页、详情与分集 HLS；播放页片源是 base64+urlencode 密文，只取直连 m3u8 的极速线路，正版平台跳转自动滤掉；站内搜索要图形验证码，未提供",
       "url": "../plugins/dpw.source.js"
-    },
-    {
-      "id": "amj.source",
-      "name": "爱美剧",
-      "version": "1.0.0",
-      "description": "爱美剧（amj31.com）单文件数据源：六个频道分页、详情与多线路 HLS；播放页片源分两套，encrypt=4 的密文要 POST 到 /amj-play.php 换真实地址，encrypt=0 的直接是明文 m3u8；站内搜索返回 404，未提供",
-      "url": "../plugins/amj.source.js"
     }
   ]
 }
