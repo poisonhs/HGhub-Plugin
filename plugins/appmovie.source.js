@@ -1,7 +1,7 @@
 export const meta = {
   id: 'appmovie.source',
   name: 'APP影院',
-  version: '1.0.2',
+  version: '1.0.3',
   protocol: 1,
   kind: 'source',
   description: 'APP影院（appmovie.art）：首页四个热映分区、八个频道分页、搜索、详情与多线路 m3u8 直连。',
@@ -52,16 +52,30 @@ function mediaTypeOf(label, episodeCount) {
 export default hg => {
   async function fetchText(path, ctx, ttl) {
     const url = path.startsWith('http') ? path : `${SITE}${path}`;
-    const res = await hg.http.fetch({
-      url,
-      headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml', Referer: `${SITE}/` },
-      retry: 1,
-      signal: ctx.signal,
-      ...(ttl ? { cache: { ttlSec: ttl, staleIfErrorSec: 3600 } } : {}),
-    });
+    let res;
+    try {
+      res = await hg.http.fetch({
+        url,
+        headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml', Referer: `${SITE}/` },
+        retry: 1,
+        signal: ctx.signal,
+        ...(ttl ? { cache: { ttlSec: ttl, staleIfErrorSec: 3600 } } : {}),
+      });
+    } catch (error) {
+      if (error && (error.code === 'CANCELLED' || error.code === 'TIMEOUT')) throw error;
+      // 站点断开连接时宿主只会给一个笼统的网络错误，用户看到的是「请求失败」。
+      // 说清楚点：这台机器上所有域名都指回 appmovie.art，是站方后端的事。
+      throw new hg.PluginError('UPSTREAM_ERROR', '站点连不上，可能已经关站或者换了域名');
+    }
     if (res.status === 404) throw new hg.PluginError('NOT_FOUND', '内容不存在或已下架');
     if (!res.ok) throw new hg.PluginError('UPSTREAM_ERROR', `站点返回 ${res.status}`);
-    return norm(res.data);
+    const body = norm(res.data);
+    // 后端 fatal 的时候 openresty 会先把 200 头发出去再掐连接，宿主拿到的是空串，
+    // 再往下解析只会变成「结构已变化」，容易让人以为是插件坏了。
+    if (!body.trim()) {
+      throw new hg.PluginError('UPSTREAM_ERROR', '站点返回了空页面，它的后端应该出故障了');
+    }
+    return body;
   }
 
   async function fetchDoc(path, ctx, ttl) {
