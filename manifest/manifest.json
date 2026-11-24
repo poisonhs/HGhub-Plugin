@@ -162,6 +162,13 @@
       "version": "1.0.0",
       "description": "66大片网（77dpw.vip）单文件数据源：首页六区、五个频道分页、详情与分集 HLS；播放页片源是 base64+urlencode 密文，只取直连 m3u8 的极速线路，正版平台跳转自动滤掉；站内搜索要图形验证码，未提供",
       "url": "../plugins/dpw.source.js"
+    },
+    {
+      "id": "kanliao.source",
+      "name": "今日看料",
+      "version": "1.0.0",
+      "description": "今日看料（kanliao20.org）单文件数据源：首页最新、十一个分区、关键词搜索、详情与 HLS 回放；视频地址由服务端渲染进播放器 data-config，明文 m3u8 直连；导流外链帖会直接说明",
+      "url": "../plugins/kanliao.source.js"
     }
   ]
 }

@@ -29,6 +29,7 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `dpw.source` 66大片网 | 首页 / 分类 / 详情 / 播放 | 需要关闭🛩️ |
 | `heiliao.source` 黑料网 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `hl365.source` 黑料不打烊 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
+| `kanliao.source` 今日看料 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 
 ```
 manifest/manifest.json      插件列表，订阅入口
@@ -53,6 +54,7 @@ plugins/yingxi.source.js   单文件插件
 plugins/hhkan.source.js   单文件插件
 plugins/pianku.source.js  单文件插件
 plugins/dpw.source.js     单文件插件
+plugins/kanliao.source.js 单文件插件
 plugins/heiliao.source.js 单文件插件
 plugins/hl365.source.js   单文件插件
 ```
@@ -76,6 +78,6 @@ https://raw.githubusercontent.com/poisonhs/HGhub-Plugin/main/manifest/manifest.j
 ## 说明
 
 - 不需要账号，不读写片库以外的数据，插件只在被调用时运行。
-- `tangxin.vlog`、`av321.source`、`av591.source`、`cg91.source`、`hanime16.source`、`heiliao.source`、`hl365.source`、`hlws.source`、`huangguo.source` 与 `chengguo.source` 声明了 `meta.mature`，宿主默认隐藏，需在设置里允许成人内容后才会出现。
+- `tangxin.vlog`、`av321.source`、`av591.source`、`cg91.source`、`hanime16.source`、`heiliao.source`、`hl365.source`、`kanliao.source`、`hlws.source`、`huangguo.source` 与 `chengguo.source` 声明了 `meta.mature`，宿主默认隐藏，需在设置里允许成人内容后才会出现。
 - 数据与播放地址来自上游采集接口，站点换域名或改接口会导致插件失效；换地址时改 `plugins/bfzy.source.js` 顶部的 `API` 常量。
 - 流地址有时效，播放中途失效时宿主会带 `reason: "refresh"` 重新调用插件解析。
