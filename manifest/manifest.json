@@ -162,6 +162,13 @@
       "version": "1.0.0",
       "description": "片库（4k01.pianku.online）单文件数据源：首页九宫分区、四个主分类、关键词搜索、详情与分集 HLS；播放页把片源写在 player_aaaa 里，只取直连 m3u8 的自有线路，腾讯/优酷/B站/爱奇艺的正版跳转自动滤掉",
       "url": "../plugins/pianku.source.js"
+    },
+    {
+      "id": "dpw.source",
+      "name": "66大片网",
+      "version": "1.0.0",
+      "description": "66大片网（77dpw.vip）单文件数据源：首页六区、五个频道分页、详情与分集 HLS；播放页片源是 base64+urlencode 密文，只取直连 m3u8 的极速线路，正版平台跳转自动滤掉；站内搜索要图形验证码，未提供",
+      "url": "../plugins/dpw.source.js"
     }
   ]
 }
