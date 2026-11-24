@@ -138,22 +138,22 @@
     {
       "id": "hl365.source",
       "name": "黑料不打烊",
-      "version": "1.0.1",
-      "description": "黑料不打烊采集单文件数据源：首页最新流、二十个吃瓜分区、关键词搜索、详情与分集 HLS；播放地址在播放器 data-config 里带 auth_key 直连，封面走加密图床由宿主解密",
+      "version": "1.1.0",
+      "description": "黑料不打烊采集单文件数据源：首页最新流、二十个吃瓜分区、关键词搜索、详情与分集 HLS；播放地址在播放器 data-config 里带 auth_key 直连，该签名里的时间位只参与校验、不随时间失效，详情页按 90 秒复用；封面走加密图床由宿主解密",
       "url": "../plugins/hl365.source.js"
     },
     {
       "id": "pianku.source",
       "name": "片库",
-      "version": "1.0.0",
-      "description": "片库（4k01.pianku.online）单文件数据源：首页九宫分区、四个主分类、关键词搜索、详情与分集 HLS；播放页把片源写在 player_aaaa 里，只取直连 m3u8 的自有线路，腾讯/优酷/B站/爱奇艺的正版跳转自动滤掉",
+      "version": "1.1.0",
+      "description": "片库（4k01.pianku.online）单文件数据源：首页九宫分区、四个主分类、关键词搜索、详情与分集 HLS；播放页把片源写在 player_aaaa 里，自有 m3u8 线路直接播，腾讯/优酷/B站/爱奇艺那几条以 external 交给系统打开",
       "url": "../plugins/pianku.source.js"
     },
     {
       "id": "dpw.source",
       "name": "66大片网",
-      "version": "1.0.0",
-      "description": "66大片网（77dpw.vip）单文件数据源：首页六区、五个频道分页、详情与分集 HLS；播放页片源是 base64+urlencode 密文，只取直连 m3u8 的极速线路，正版平台跳转自动滤掉；站内搜索要图形验证码，未提供",
+      "version": "1.1.0",
+      "description": "66大片网（77dpw.vip）单文件数据源：首页六区、五个频道分页、详情与分集 HLS；播放页片源是 base64+urlencode 密文，极速线路直接播，腾讯/爱奇艺/芒果/B站那几条以 external 交给系统打开；站内搜索要图形验证码，未提供",
       "url": "../plugins/dpw.source.js"
     },
     {

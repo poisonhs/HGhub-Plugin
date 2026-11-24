@@ -1,11 +1,11 @@
 export const meta = {
   id: 'dpw.source',
   name: '66大片网',
-  version: '1.0.0',
+  version: '1.1.0',
   protocol: 1,
   kind: 'source',
   description:
-    '66大片网（77dpw.vip）：苹果CMS + mxpro 模板。首页六个分区、五个频道分页、详情与分集 HLS。列表走站内 ajax 数据接口；播放页的片源是 base64 再 urlencode 的密文，解开后只有「极速」那条是直连 m3u8，腾讯/爱奇艺/芒果/B站那几条只是正版平台页面。站内搜索要图形验证码，未提供。',
+    '66大片网（77dpw.vip）：苹果CMS + mxpro 模板。首页六个分区、五个频道分页、详情与分集 HLS。列表走站内 ajax 数据接口；播放页的片源是 base64 再 urlencode 的密文，解开后只有「极速」那条是直连 m3u8，腾讯/爱奇艺/芒果/B站那几条跳正版平台，按 external 交给系统打开。站内搜索要图形验证码，未提供。',
   mature: false,
   linkDomains: ['77dpw.vip'],
   defaultHeaders: {
@@ -26,8 +26,36 @@ const AJAX = '/index.php/ajax/data';
 //   腾讯视频 → qq      → v.qq.com
 //   爱奇艺  → qiyi    → iqiyi.com
 //   芒果TV  → mgtv    → mgtv.com
-// 正版那几条给过去只能跳出应用，按名字排掉。
+// 宿主 0.0.5 起支持 kind:"external"，正版那几条不再排掉，播放时交系统打开。
 const PLATFORM_TAB = /腾讯|爱奇艺|优酷|芒果|B站|bilibili|搜狐|PPTV|咪咕|抖音|乐视|AcFun/i;
+
+const EXTERNAL_APP = [
+  [/qq|腾讯/i, '腾讯视频'],
+  [/qiyi|奇异|爱奇艺/i, '爱奇艺'],
+  [/youku|优酷/i, '优酷'],
+  [/bilibili|B站/i, '哔哩哔哩'],
+  [/mgtv|芒果/i, '芒果TV'],
+  [/sohu|搜狐/i, '搜狐视频'],
+  [/pptv|pp视频/i, 'PP视频'],
+  [/migu|咪咕/i, '咪咕视频'],
+  [/letv|乐视/i, '乐视视频'],
+  [/acfun/i, 'AcFun'],
+];
+
+function appOf(...hints) {
+  const text = hints.filter(Boolean).join(' ');
+  for (const [re, app] of EXTERNAL_APP) if (re.test(text)) return app;
+  return '';
+}
+
+// 外部打开不附带请求头、Cookie 和变换，宿主只把地址交给系统，所以这里不带 headers。
+function externalStream(url, label, from) {
+  const app = appOf(from, label, url);
+  const stream = { url, kind: 'external' };
+  if (app) stream.external = { app };
+  stream.label = (app || trim(label) || '外部打开').slice(0, 60) + ' · 外部打开';
+  return stream;
+}
 
 const CATS = [
   { id: '1', label: '电影', type: 'movie' },
@@ -199,7 +227,6 @@ export default function (hg) {
     const playlists = [];
     panes.forEach((pane, i) => {
       const label = tabNames[i] || '';
-      if (PLATFORM_TAB.test(label)) return;
       const episodes = [];
       const seenNid = new Set();
       for (const anchor of pane.select('a')) {
@@ -350,11 +377,11 @@ export default function (hg) {
 
         const url = decodeUrl(cfg.url, cfg.encrypt);
         if (!url) throw new hg.PluginError('CONTENT_LOCKED', '这条线路没有给出地址');
+        const from = trim(cfg.from);
         if (!/\.m3u8(\?|$)/i.test(url)) {
-          throw new hg.PluginError(
-            'CONTENT_LOCKED',
-            `${trim(cfg.from) || '这条线路'} 是正版平台页面，换别的线路试试`
-          );
+          // 正版平台页：宿主播不了，但地址本身有效，交系统打开。
+          if (/^https?:\/\//i.test(url)) return { streams: [externalStream(url, from, from)] };
+          throw new hg.PluginError('CONTENT_LOCKED', `${from || '这条线路'} 没有可播放的地址`);
         }
         // 这里刻意不探活：极速的 CDN（vv.jisuzyv.com）只放行国内网络，
         // 从别的线路去探必然拿不到清单，探出来的「失效」是假的。

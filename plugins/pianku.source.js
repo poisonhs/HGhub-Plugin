@@ -1,11 +1,11 @@
 export const meta = {
   id: 'pianku.source',
   name: '片库',
-  version: '1.0.0',
+  version: '1.1.0',
   protocol: 1,
   kind: 'source',
   description:
-    '片库（4k01.pianku.online）：苹果CMS 模板自建站。首页分区、四个主分类与子分类、关键词搜索、详情与分集 HLS。播放页把片源写在 player_aaaa 里，其中「备用线路」「自营4K60帧」两条是直连 m3u8，腾讯/优酷/B站/爱奇艺那几条只是跳正版平台。',
+    '片库（4k01.pianku.online）：苹果CMS 模板自建站。首页分区、四个主分类与子分类、关键词搜索、详情与分集 HLS。播放页把片源写在 player_aaaa 里，其中「备用线路」「自营4K60帧」两条是直连 m3u8，腾讯/优酷/B站/爱奇艺那几条跳正版平台，按 external 交给系统打开。',
   mature: false,
   linkDomains: ['pianku.online'],
   defaultHeaders: {
@@ -20,9 +20,37 @@ const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
 // 站里同一部片子常挂五条线路：自有 m3u8 两三条，剩下的是腾讯、优酷、B站、爱奇艺的
-// 播放页。正版那几条给过去只能跳出应用，按标签名排掉。实测十六部样本里标签与实际
-// 片源类型一一对应，所以这里靠名字判断，不必每部都去抓播放页确认。
+// 播放页。宿主 0.0.5 起支持 kind:"external"，这些地址能交给系统浏览器打开，所以不再
+// 按标签排掉，而是保留在选集里，播放时按地址类型分流。
 const PLATFORM_TAB = /腾讯|优酷|奇异|爱奇艺|B站|bilibili|芒果|搜狐|PPTV|咪咕|抖音|乐视|AcFun/i;
+
+const EXTERNAL_APP = [
+  [/qq|腾讯/i, '腾讯视频'],
+  [/qiyi|奇异|爱奇艺/i, '爱奇艺'],
+  [/youku|优酷/i, '优酷'],
+  [/bilibili|B站/i, '哔哩哔哩'],
+  [/mgtv|芒果/i, '芒果TV'],
+  [/sohu|搜狐/i, '搜狐视频'],
+  [/pptv|pp视频/i, 'PP视频'],
+  [/migu|咪咕/i, '咪咕视频'],
+  [/letv|乐视/i, '乐视视频'],
+  [/acfun/i, 'AcFun'],
+];
+
+function appOf(...hints) {
+  const text = hints.filter(Boolean).join(' ');
+  for (const [re, app] of EXTERNAL_APP) if (re.test(text)) return app;
+  return '';
+}
+
+// 外部打开不附带请求头、Cookie 和变换，宿主只把地址交给系统，所以这里不带 headers。
+function externalStream(url, label, from) {
+  const app = appOf(from, label, url);
+  const stream = { url, kind: 'external' };
+  if (app) stream.external = { app };
+  stream.label = (app || trim(label) || '外部打开').slice(0, 60) + ' · 外部打开';
+  return stream;
+}
 
 const CAT_TYPE = { 20: 'movie', 37: 'series', 43: 'anime', 45: 'variety' };
 const SUB_PARENT = {
@@ -224,7 +252,6 @@ export default function (hg) {
       const sid = norm(pane.attr('id')).replace(/^playlist-/, '');
       if (!/^\d+$/.test(sid)) continue;
       const label = tabs.get(sid) || `线路${sid}`;
-      if (PLATFORM_TAB.test(label)) continue;
       const episodes = [];
       const seenNid = new Set();
       for (const anchor of pane.select('a')) {
@@ -373,11 +400,11 @@ export default function (hg) {
 
         const url = trim(norm(cfg.url).replace(/\\\//g, '/'));
         if (!url) throw new hg.PluginError('CONTENT_LOCKED', '这条线路没有给出地址');
+        const from = trim(cfg.from);
         if (!/\.m3u8(\?|$)/i.test(url)) {
-          throw new hg.PluginError(
-            'CONTENT_LOCKED',
-            `${trim(cfg.from) || '这条线路'} 是正版平台页面，换别的线路试试`
-          );
+          // 正版平台页：宿主播不了，但地址本身有效，交系统打开。
+          if (/^https?:\/\//i.test(url)) return { streams: [externalStream(url, from, from)] };
+          throw new hg.PluginError('CONTENT_LOCKED', `${from || '这条线路'} 没有可播放的地址`);
         }
         return {
           streams: [
@@ -385,7 +412,7 @@ export default function (hg) {
               url,
               kind: 'media',
               format: 'hls',
-              label: (trim(cfg.from) || '直连').slice(0, 40),
+              label: (from || '直连').slice(0, 40),
             },
           ],
         };

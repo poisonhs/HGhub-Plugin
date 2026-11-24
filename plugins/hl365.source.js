@@ -1,11 +1,11 @@
 export const meta = {
   id: 'hl365.source',
   name: '黑料不打烊',
-  version: '1.0.1',
+  version: '1.1.0',
   protocol: 1,
   kind: 'source',
   description:
-    '黑料不打烊（hl365.com）：Typecho + Mirages 主题，首页最新流、二十个吃瓜分区、关键词搜索、详情与分集 HLS。播放地址由服务端渲染进播放器 data-config，带 auth_key 直连，key 与切片都是绝对地址。',
+    '黑料不打烊（hl365.com）：Typecho + Mirages 主题，首页最新流、二十个吃瓜分区、关键词搜索、详情与分集 HLS。播放地址由服务端渲染进播放器 data-config，带 auth_key 直连，key 与切片都是绝对地址；auth_key 里的时间位只参与签名、不随时间失效，详情页按 90 秒复用。',
   mature: true,
   linkDomains: ['hl365.com', 'pic.biacea.cn', 'micgqv.cn', 'ucjosl.cn'],
   defaultHeaders: {
@@ -88,6 +88,15 @@ function coverRef(url) {
 
 export default function (hg) {
   let catCache = null;
+  // 播放页下发的 auth_key 形如 `exp-rand-uid-md5`。那个 exp 只是签名材料，CDN 只校验
+  // md5 对不对，不拿它跟当前时间比：同一地址超过 exp 八分钟仍 200，而删掉 auth_key、
+  // 改一位 hash、把 exp 挪到过去，全都立刻 400。所以地址不会随时间失效，
+  // 详情页可以短时间复用，不必每集都重抓一遍。
+  // 宿主会先 getDetail 再 resolvePlayback，个别时候还会预加载下一集，
+  // 留几条最近的小容量缓存就够，不必无限增长。
+  const detailCache = new Map();
+  const DETAIL_TTL = 90000;
+  const DETAIL_KEEP = 4;
 
   async function fetchText(path, ctx, ttl) {
     const url = /^https?:\/\//i.test(path) ? path : `${BASE}${path}`;
@@ -210,7 +219,15 @@ export default function (hg) {
     return cats;
   }
 
-  async function detailOf(id, ctx) {
+  // doc 是宿主侧解析出的节点句柄，只在本次调用作用域内有效，不能跨调用缓存；
+  // 只要选集时传 doc:false，命中缓存就不必重新解析 HTML。
+  async function detailOf(id, ctx, options) {
+    const force = !!(options && options.force);
+    const needDoc = !(options && options.doc === false);
+    const hit = detailCache.get(id);
+    if (!force && !needDoc && hit && Date.now() - hit.at < DETAIL_TTL) {
+      return { doc: null, episodes: hit.episodes, title: hit.title };
+    }
     const html = await fetchText(`/archives/${id}.html`, ctx, 0);
     // 详情页侧栏会铺五十来条相关推荐；导流页只有两条置顶，落错地方就别当成图文帖。
     if ((html.match(/\/archives\/\d+\.html/g) || []).length < 8) {
@@ -231,6 +248,9 @@ export default function (hg) {
       title = trim(t && t.text()).split(/\s*[-_|]\s*/)[0];
     }
     if (!title) throw new hg.PluginError('UPSTREAM_CHANGED', '详情结构已变化');
+    detailCache.delete(id);
+    detailCache.set(id, { at: Date.now(), episodes, title });
+    while (detailCache.size > DETAIL_KEEP) detailCache.delete(detailCache.keys().next().value);
     return { doc, episodes, title };
   }
 
@@ -337,38 +357,44 @@ export default function (hg) {
         const id = trim(params && params.mediaId);
         if (!/^\d+$/.test(id)) throw new hg.PluginError('INVALID_ARGUMENT', '作品 ID 不合法');
 
-        // auth_key 的过期位就是签发时刻，全靠 CDN 侧的宽限窗口兜着，所以每条都要重抓。
-        const { episodes } = await detailOf(id, ctx);
-        if (!episodes.length) {
-          throw new hg.PluginError('CONTENT_LOCKED', '这条是图文爆料，没有可播放的视频');
-        }
-
         const wanted = trim(params && params.episodeId).replace(/^e/, '');
         const idx = Number(wanted);
-        const picked = episodes.find(ep => ep.index === idx) || episodes[0];
 
-        const stream = {
-          url: picked.url,
-          kind: 'media',
-          format: 'hls',
-          headers: { 'User-Agent': UA, Referer: `${BASE}/` },
-        };
-        if (episodes.length > 1) stream.label = `第${picked.index + 1}集`;
-
-        const probe = await hg.http.fetch({
-          url: picked.url,
-          responseType: 'text',
-          headers: { 'User-Agent': UA, Referer: `${BASE}/` },
-          timeoutMs: 8000,
-          maxBytes: 512 * 1024,
-          retry: 0,
-          signal: ctx.signal,
-        }).catch(error => {
-          if (error && error.code === 'CANCELLED') throw error;
-          return null;
-        });
+        let episodes = [];
+        let picked = null;
+        let probe = null;
+        // 缓存里的地址实测不会随时间失效；万一探不通，丢掉缓存重抓一次再试，
+        // 站点哪天真上了时间校验也能自愈。
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          const detail = await detailOf(id, ctx, { doc: false, force: attempt > 0 });
+          episodes = detail.episodes;
+          if (!episodes.length) {
+            throw new hg.PluginError('CONTENT_LOCKED', '这条是图文爆料，没有可播放的视频');
+          }
+          picked = episodes.find(ep => ep.index === idx) || episodes[0];
+          probe = await hg.http.fetch({
+            url: picked.url,
+            responseType: 'text',
+            headers: { 'User-Agent': UA, Referer: `${BASE}/` },
+            timeoutMs: 8000,
+            maxBytes: 512 * 1024,
+            retry: 0,
+            signal: ctx.signal,
+          }).catch(error => {
+            if (error && error.code === 'CANCELLED') throw error;
+            return null;
+          });
+          if (probe && probe.ok && norm(probe.data).startsWith('#EXTM3U')) break;
+        }
 
         if (probe && probe.ok && norm(probe.data).startsWith('#EXTM3U')) {
+          const stream = {
+            url: picked.url,
+            kind: 'media',
+            format: 'hls',
+            headers: { 'User-Agent': UA, Referer: `${BASE}/` },
+          };
+          if (episodes.length > 1) stream.label = `第${picked.index + 1}集`;
           return { streams: [stream] };
         }
         throw new hg.PluginError(
