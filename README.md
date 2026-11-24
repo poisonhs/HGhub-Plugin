@@ -17,7 +17,6 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `zhuiying.source` 追影 | 首页 / 分类 / 搜索 / 详情 / 播放 | 需要关闭🛩️ |
 | `kxyy.source` 开心影院 | 首页 / 分类 / 搜索 / 详情 / 播放 | 需要关闭🛩️ |
 | `dhvideo.source` 豆花电影网 | 首页 / 分类 / 搜索 / 详情 / 播放 | 首集可能要等 3 MB 播放页，之后走缓存 |
-| `appmovie.source` APP影院 | 首页 / 分类 / 搜索 / 详情 / 播放 | 需要关闭🛩️ |
 | `auete.source` Auete影视 | 首页 / 分类 / 详情 / 播放 | 站内搜索需图形验证码，未提供搜索 |
 | `netflixgc.source` 奈飞工厂 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
 | `cg91.source` 91吃瓜 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
@@ -44,7 +43,6 @@ plugins/jisu.source.js      单文件插件
 plugins/zhuiying.source.js  单文件插件
 plugins/kxyy.source.js      单文件插件
 plugins/dhvideo.source.js   单文件插件
-plugins/appmovie.source.js  单文件插件
 plugins/auete.source.js     单文件插件
 plugins/netflixgc.source.js 单文件插件
 plugins/cg91.source.js      单文件插件
