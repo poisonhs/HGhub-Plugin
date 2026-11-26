@@ -162,6 +162,13 @@
       "version": "1.0.0",
       "description": "18PORNY（lovebox.xm0108.lol）单文件数据源：首页九区、九个主分区与四十一子分类分页、短剧集库、关键词搜索、单集详情与选集、HLS 直连；播放地址由播放页 player_aaaa 下发，m3u8、AES-128 密钥与切片都是绝对地址",
       "url": "../plugins/lovebox.source.js"
+    },
+    {
+      "id": "duanju55.source",
+      "name": "五五短剧",
+      "version": "1.0.0",
+      "description": "五五短剧（duanju55.com）单文件数据源：苹果CMS + shoutu39 模板，首页轮播与三个推荐栏、六个剧情分类加四十余个题材标签分页、关键词搜索、详情与直连 HLS；每部只有一个整片片源，播放地址写在播放页的 player_aaaa 里，m3u8 与切片都是明文",
+      "url": "../plugins/duanju55.source.js"
     }
   ]
 }
