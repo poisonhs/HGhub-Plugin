@@ -30,6 +30,7 @@ HGhub 客户端下载：<https://github.com/Minireel/HGhub/releases>
 | `heiliao.source` 黑料网 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `hl365.source` 黑料不打烊 | 首页 / 分类 / 搜索 / 详情 / 播放 | 成人内容，需在设置里开启 |
 | `duanju55.source` 五五短剧 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
+| `mfdmgw.source` 免费动漫 | 首页 / 分类 / 搜索 / 详情 / 播放 | |
 
 ```
 manifest/manifest.json      插件列表，订阅入口
@@ -57,6 +58,7 @@ plugins/lovebox.source.js 单文件插件
 plugins/heiliao.source.js 单文件插件
 plugins/hl365.source.js   单文件插件
 plugins/duanju55.source.js 单文件插件
+plugins/mfdmgw.source.js 单文件插件
 ```
 
 ## 订阅
