@@ -173,8 +173,8 @@
     {
       "id": "mfdmgw.source",
       "name": "免费动漫",
-      "version": "1.0.0",
-      "description": "免费动漫（mfdmgw.com）单文件数据源：苹果CMS + mxpro 模板，首页轮播与五个语言分区、热榜与追剧周表，全站列表走站内 ajax 接口分页（分类页本身不翻页），搜索改用 ajax 建议接口绕开图形验证码；详情含分集，播放页从 player_aaaa 取直连 m3u8，非凡与暴风两路来源同时存在时都会给出",
+      "version": "1.0.1",
+      "description": "免费动漫（mfdmgw.com）单文件数据源：苹果CMS + mxpro 模板，首页轮播与五个语言分区、热榜与追剧周表，全站列表走站内 ajax 接口分页（分类页本身不翻页），搜索改用 ajax 建议接口绕开图形验证码；详情含分集，播放页从 player_aaaa 取直连 m3u8，非凡与暴风两路来源同时存在时都会给出；封面取 data-original，站点 src 是同一张占位图",
       "url": "../plugins/mfdmgw.source.js"
     }
   ]

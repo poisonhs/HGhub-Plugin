@@ -1,7 +1,7 @@
 export const meta = {
   id: 'mfdmgw.source',
   name: '免费动漫',
-  version: '1.0.0',
+  version: '1.0.1',
   protocol: 1,
   kind: 'source',
   description:
@@ -85,6 +85,23 @@ function safeJson(text) {
   } catch {
     return null;
   }
+}
+
+// mxpro 这版把真正的封面挂在 data-original 上，src 一律是同一张橙色占位图
+// （/upload/mxprocms/ 目录下的 logo 图）。实测首页 139 张卡片的 src 完全相同，
+// 所以按 src 取会整屏都是占位图。
+const PLACEHOLDER_DIR = '/upload/mxprocms/';
+
+function coverOf(img) {
+  if (!img) return '';
+  for (const raw of [img.attr('data-original'), img.attr('data-src'), img.attr('src')]) {
+    const url = imageOf(raw);
+    if (!url) continue;
+    if (url.includes(PLACEHOLDER_DIR)) continue;
+    // 豆瓣图床会 301 到 https，直接给 https 少一跳
+    return url.replace(/^http:\/\/lain\.bgm\.tv\//i, 'https://lain.bgm.tv/');
+  }
+  return '';
 }
 
 function sourceLabel(from) {
@@ -191,11 +208,7 @@ export default function (hg) {
     if (!title) return null;
 
     const item = { id: m[1], title: title.slice(0, 200), type: 'anime' };
-    const img = node.first('img');
-    // data-original 是豆瓣外链，请求会 301；站内 mxprocms 那版更稳，先取 src。
-    const cover = imageOf(
-      img && (img.attr('src') || img.attr('data-original') || img.attr('data-src'))
-    );
+    const cover = coverOf(node.first('img'));
     if (cover) item.cover = cover;
     const note = node.first('.module-item-note');
     if (note) {
@@ -322,7 +335,9 @@ export default function (hg) {
           const style = norm(link.attr('style'));
           const bg = style.match(/url\((['"]?)([^'")]+)\1\)/i);
           const cover = imageOf(bg && bg[2]);
-          if (cover) item.cover = cover;
+          if (cover && !cover.includes(PLACEHOLDER_DIR)) {
+            item.cover = cover.replace(/^http:\/\/lain\.bgm\.tv\//i, 'https://lain.bgm.tv/');
+          }
           const noteNode = slide.first('.v-ins p');
           if (noteNode) {
             const note = trim(noteNode.text());
@@ -450,8 +465,9 @@ export default function (hg) {
         const info = await detailOf(id, ctx);
         const detail = { id, title: info.title.slice(0, 200), type: 'anime', playlists: [] };
 
-        const coverNode = info.doc.first('.module-item-pic img') || info.doc.first('.module-item-cover img');
-        const cover = imageOf(coverNode && (coverNode.attr('src') || coverNode.attr('data-original')));
+        const cover = coverOf(
+          info.doc.first('.module-item-pic img') || info.doc.first('.module-item-cover img')
+        );
         if (cover) detail.cover = cover;
 
         const intro = info.doc.first('.module-info-introduction-content');
